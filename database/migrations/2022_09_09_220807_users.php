@@ -19,15 +19,16 @@ class Users extends Migration
             $table->string('ruc', 13)->unique()->nullable()->comment("user ruc");
             $table->string('name')->comment('name of the users');
             $table->string('lastname')->comment('surname of the users');
-            $table->string('email')->unique()->comment("users mail ");
+            $table->string('email')->unique()->comment("user email");
             $table->enum('gender',['male','female','other'])->nullable()->comment('gender of users');
             $table->string('password')->nullable()->comment('users password');
             $table->text('photography')->nullable()->comment('user photography');
             $table->string('driving_license_photography')->nullable()->comment('user driving license photography');
             $table->boolean('verified')->default(false)->comment('user verified');
             $table->dateTime('email_verified_at')->nullable()->comment('email date verify');
-            $table->boolean('active')->default(1)->comment('User is active');
+            $table->boolean('active')->default(0)->comment('User is active');
             $table->string('google_id')->unique()->nullable()->comment('user google Id');
+            $table->boolean('deleted')->default(0)->comment('user is deleted');
             $table->rememberToken();
             $table->timestamps();
             /*foreign keys*/
