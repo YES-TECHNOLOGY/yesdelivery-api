@@ -33,9 +33,8 @@ Route::prefix('v1')->group(function () {
     Route::group(['middleware' => 'auth:api'], function () {
         Route::resource('users',UserController::class);
 
-        Route::get('me', [UserController::class, 'me']);
-
         Route::group(['prefix' => 'profile'], function () {
+            Route::get('/', [ProfileController::class, 'me']);
             Route::put('/', [ProfileController::class, 'update']);
             Route::post('photography', [ProfileController::class, 'updatePhotography']);
             Route::post('license', [ProfileController::class, 'updateDrivingLicensePhotography']);
