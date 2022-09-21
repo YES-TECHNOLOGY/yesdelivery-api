@@ -28,6 +28,7 @@ class Rol extends Model
     }
 
     public function access(){
-        return $this->belongsToMany(Access::class,'access_role','cod_rol','cod_access');
+        return $this->belongsToMany(Access::class,'access_roles','cod_rol','cod_access');
     }
+
 }

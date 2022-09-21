@@ -10,6 +10,7 @@ class Log extends Model
     use HasFactory;
 
     protected $primaryKey='cod_log';
+
     protected $fillable=[
         'type',
         'ip',

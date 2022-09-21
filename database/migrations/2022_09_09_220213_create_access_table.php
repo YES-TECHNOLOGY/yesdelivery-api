@@ -19,7 +19,7 @@ class CreateAccessTable extends Migration
             $table->string('endpoint')->comment('endpoint of the api you will access');
             $table->enum('method',['GET','POST','PUT','DELETE','OPTIONS'])->comment('Action you could take at the endpoint');
             $table->text('detail')->nullable();
-            $table->unsignedBigInteger('cod_menu')->comment('Foreign key pointing to front uri');
+            $table->unsignedBigInteger('cod_menu')->nullable()->comment('Foreign key pointing to front uri');
             $table->timestamps();
             $table->foreign('cod_menu')
                 ->references('cod_menu')

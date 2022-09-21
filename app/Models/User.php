@@ -18,6 +18,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'identification',
         'name',
         'lastname',
         'email',
@@ -26,6 +27,9 @@ class User extends Authenticatable
         'password',
         'photography',
         'cod_rol',
+        'driving_license_photography',
+        'remember_token',
+        'remember_token_valid_time'
     ];
 
     /**
@@ -37,9 +41,12 @@ class User extends Authenticatable
         'password',
         'email_verified_at',
         'remember_token',
+        'remember_token_valid_time',
         'google_id',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'deleted',
+        'active',
     ];
 
     /**
@@ -67,7 +74,7 @@ class User extends Authenticatable
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function role(){
-        return $this->belongsTo(Role::class,'cod_rol');
+    public function rol(){
+        return $this->belongsTo(Rol::class,'cod_rol');
     }
 }

@@ -9,11 +9,13 @@ class AccessRole extends Model
 {
     use HasFactory;
 
-    protected $primaryKey=['cod_access','cod_rol'];
-
     protected $fillable=[
         'cod_access',
-        'cod_rol',
-        'active'
+        'cod_rol'
+    ];
+
+    protected $hidden=[
+        "created_at",
+        "updated_at",
     ];
 }

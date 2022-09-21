@@ -15,8 +15,8 @@ class Users extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id()->comment("user identifier");
-            $table->string('identification', 10)->unique()->comment("user identification");
-            $table->string('ruc', 13)->unique()->nullable()->comment("user ruc");
+            $table->char('identification', 10)->unique()->comment("user identification");
+            $table->char('ruc', 13)->unique()->nullable()->comment("user ruc");
             $table->string('name')->comment('name of the users');
             $table->string('lastname')->comment('surname of the users');
             $table->string('email')->unique()->comment("user email");
@@ -26,9 +26,9 @@ class Users extends Migration
             $table->string('driving_license_photography')->nullable()->comment('user driving license photography');
             $table->boolean('verified')->default(false)->comment('user verified');
             $table->dateTime('email_verified_at')->nullable()->comment('email date verify');
+            $table->dateTime('remember_token_valid_time')->nullable()->comment('Remember token valid time');
             $table->boolean('active')->default(0)->comment('User is active');
             $table->string('google_id')->unique()->nullable()->comment('user google Id');
-            $table->boolean('deleted')->default(0)->comment('user is deleted');
             $table->rememberToken();
             $table->timestamps();
             /*foreign keys*/

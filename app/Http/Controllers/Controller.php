@@ -13,23 +13,42 @@ use Illuminate\Routing\Controller as BaseController;
 class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
+    protected $limit_pagination=15;
+    protected $messages = [
+        'required'  => 'El campo :attribute es requerido.',
+        'unique'    => ':attribute ya existe',
+        'exists'=>':attribute no existe',
+        'email'=>'El correo es incorrecto',
+        'in'=>':attribute es incorrecto',
+        'same'=>':attribute no coinciden',
+        'mimes'=>'Formato no admitido'
+    ];
 
     /**
      * Return a response formatted in JSON
      * @param $error
      * @param $status
      * @param $data
+     * @param bool $paginate
      * @return \Illuminate\Http\JsonResponse
      */
-    public static function response($error=true, $code=Response::HTTP_NOT_FOUND, $status='404 Not Found', $data =array()){
-        return response()->json([
-            'error' => $error,
-            'code' => $code,
-            'status'=> $status,
-            'data' => $data
-        ], $code);
-    }
 
+    public static function response($error=true, $code=Response::HTTP_NOT_FOUND, $status='404 Not Found', $data='' ,$paginate=false){
+        $d=array();
+        $d['error']= $error;
+        $d['code'] = $code;
+        $d['status']= $status;
+        if($data!='')
+            $d['data']=$data;
+        if($paginate){
+            $d['data']=$data->items();
+            $d['per_page']=$data->perPage();
+            $d['last_page']=$data->lastPage();
+            $d['current_page']=$data->currentPage();
+            $d['total']=$data->total();
+        }
+        return response()->json($d, $code);
+    }
     /**
      * Save a log in the database
      *
@@ -52,6 +71,22 @@ class Controller extends BaseController
             $log['id_user']=$user->id;
         }
         Log::create($log);
+    }
+
+    /**
+     * Verify access with id user.
+     *
+     * @param User $user
+     * @param $method
+     * @param $endpoint
+     */
+    public function verifyPermissions(User $user, $method, $endpoint){
+        $access= $user->rol->access
+            ->where('method','=',$method)
+            ->where('endpoint','=',$endpoint)
+            ->first();
+        if(!$access)
+            abort(403,'403 Forbidden');
     }
 
 }

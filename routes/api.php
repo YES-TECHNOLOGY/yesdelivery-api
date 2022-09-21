@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FileController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,12 +23,25 @@ Route::prefix('v1')->group(function () {
         Route::post('login', [AuthController::class, 'login']);
         Route::post('register', [AuthController::class, 'register']);
         Route::post('refresh', [AuthController::class, 'refresh']);
+        Route::post('recover', [AuthController::class, 'recoverPassword']);
+        Route::post('change-password', [AuthController::class, 'saveNewPassword']);
 
         Route::group(['middleware' => 'auth:api'], function () {
             Route::post('logout', [AuthController::class, 'logout']);
-            Route::get('me', [AuthController::class, 'me']);
         });
     });
+    Route::group(['middleware' => 'auth:api'], function () {
+        Route::resource('users',UserController::class);
 
+        Route::get('me', [UserController::class, 'me']);
+
+        Route::group(['prefix' => 'profile'], function () {
+            Route::put('/', [ProfileController::class, 'update']);
+            Route::post('photography', [ProfileController::class, 'updatePhotography']);
+            Route::post('license', [ProfileController::class, 'updateDrivingLicensePhotography']);
+
+        });
+
+    });
 
 });
