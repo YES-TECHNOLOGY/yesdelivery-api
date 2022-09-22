@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class AccessRoleController extends Controller
+class VehicleController extends Controller
 {
     //
 }
