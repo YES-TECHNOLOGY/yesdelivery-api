@@ -98,7 +98,7 @@ class UserController extends Controller
      */
     public function show(Request $request,$id): JsonResponse
     {
-        Controller::verifyPermissions($request->user(),'GET','/users/{user}');
+        Controller::verifyPermissions($request->user(),'GET','/users');
         $user=User::findOrFail($id);
         $this->generatePhotographyUrl($user);
         $this->generateLicenceUrl($user);

@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AccessController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RolController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +34,10 @@ Route::prefix('v1')->group(function () {
     });
     Route::group(['middleware' => 'auth:api'], function () {
         Route::resource('users',UserController::class);
+        Route::resource('roles',RolController::class);
+        Route::post('/roles/{role}/access', [RolController::class, 'setAccess']);
+        Route::delete('/roles/{role}/access', [RolController::class, 'removeAccess']);
+        Route::get('/access', [AccessController::class, 'index']);
 
         Route::group(['prefix' => 'profile'], function () {
             Route::get('/', [ProfileController::class, 'me']);
