@@ -40,7 +40,8 @@ class VehicleController extends Controller
             'model',
             'year_manufacture',
             'color',
-            'registration_photography'
+            'registration_photography',
+            'type'
         ];
 
         foreach ($edit_permission as $d){
@@ -54,7 +55,8 @@ class VehicleController extends Controller
             'brand'=>'required|max:50',
             'model'=>'required|max:50',
             'year_manufacture'=>'required|numeric',
-            'color'=>'required|max:50'
+            'color'=>'required|max:50',
+            'type'=>'required'
         ],$this->messages);
 
         if ($validate->fails())
@@ -111,7 +113,8 @@ class VehicleController extends Controller
             'model',
             'year_manufacture',
             'color',
-            'active'
+            'active',
+            'type'
         ];
 
         foreach ($edit_permission as $d){
@@ -125,7 +128,8 @@ class VehicleController extends Controller
             'brand'=>'max:50|min:1',
             'model'=>'max:50|min:1',
             'year_manufacture'=>'numeric',
-            'color'=>'max:50|min:1'
+            'color'=>'max:50|min:1',
+            'type'=>'required'
         ],$this->messages);
 
         if ($validate->fails())

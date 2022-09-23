@@ -24,7 +24,9 @@ class Vehicle extends Model
         'color',
         'registration_photography',
         'active',
-        'cod_user'
+        'cod_user',
+        'type',
+        'status'
     ];
 
     /**
@@ -35,7 +37,8 @@ class Vehicle extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'cod_user'
+        'cod_user',
+        'status'
     ];
 
     /**
