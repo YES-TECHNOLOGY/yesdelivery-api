@@ -28,7 +28,7 @@ return new class extends Migration
             $table->unsignedBigInteger('cod_user')->comment('user identifier');
             $table->foreign('cod_user')
                 ->references('id')
-                ->on('users')->cascadeOnUpdate()->cascadeOnDelete();
+                ->on('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->timestamps();
         });
     }

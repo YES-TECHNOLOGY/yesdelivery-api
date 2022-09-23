@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\File;
+use App\Models\Location;
 use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class VehicleController extends Controller
     /**
      * Display a listing of the user's vehicles.
      *
+     * @param Request $request
      * @return JsonResponse
      */
     public function index(Request $request):  JsonResponse
@@ -248,5 +250,51 @@ class VehicleController extends Controller
             $image=File::find($d->registration_photography);
             $d->registration_photography=FileController::generateImageUrl($image);
         }
+    }
+
+    /**
+     * Store a newly created location of vehicle in storage.
+     *
+     * @param Request $request
+     * @param $id
+     * @return JsonResponse
+     */
+    public function storeLocation(Request $request,$id): JsonResponse
+    {
+        Controller::verifyPermissions($request->user(),'POST','/vehicles');
+        $vehicle=$request->user()->vehicles->find($id);
+
+        if(!$vehicle){
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+        }
+
+        $data=[];
+        $edit_permission =[
+            'latitude',
+            'longitude'
+        ];
+
+        foreach ($edit_permission as $d){
+            if(isset($request->$d)){
+                $data[$d]=$request->$d;
+            }
+        }
+
+        $validate=Validator::make($data,[
+            'latitude'=>'required',
+            'longitude'=>'required',
+        ],$this->messages);
+
+        if ($validate->fails())
+        {
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $validate->errors());
+        }
+
+        $data['cod_vehicle']=$vehicle->id;
+
+        Location::create($data);
+
+        return $this->response(false, Response::HTTP_CREATED, '201 Created');
+
     }
 }

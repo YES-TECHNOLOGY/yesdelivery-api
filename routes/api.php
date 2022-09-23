@@ -39,6 +39,7 @@ Route::prefix('v1')->group(function () {
         Route::resource('vehicles',VehicleController::class);
         Route::post('vehicles/{vehicle}/registrationphotography',[VehicleController::class, 'updateRegistrationPhotography']);
         Route::delete('vehicles/{vehicle}/registrationphotography',[VehicleController::class, 'deleteRegistrationPhotography']);
+        Route::post('vehicles/{vehicle}/location',[VehicleController::class, 'storeLocation']);
         Route::post('/roles/{role}/access', [RolController::class, 'setAccess']);
         Route::delete('/roles/{role}/access', [RolController::class, 'removeAccess']);
         Route::get('/access', [AccessController::class, 'index']);
