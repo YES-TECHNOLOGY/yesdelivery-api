@@ -21,7 +21,10 @@ class Controller extends BaseController
         'email'=>'El correo es incorrecto',
         'in'=>':attribute es incorrecto',
         'same'=>':attribute no coinciden',
-        'mimes'=>'Formato no admitido'
+        'mimes'=>'Formato no admitido',
+        'regex'=>'El formato es incorrecto',
+        'numeric'=>'El campo tiene que ser numérico',
+        'string'=>'Solo se aceptan texto'
     ];
 
     /**

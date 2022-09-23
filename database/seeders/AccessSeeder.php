@@ -113,5 +113,51 @@ class AccessSeeder extends Seeder
             'cod_rol'=>1,
             'cod_access'=>$access->cod_access
         ]);
+
+        /*VEHICLES*/
+
+        $access=\App\Models\Access::create([
+            'name'=>'Display a listing of the user\'s vehicles.',
+            'endpoint'=>'/vehicles',
+            'method'=>'GET',
+        ]);
+
+        \App\Models\AccessRole::create([
+            'cod_rol'=>1,
+            'cod_access'=>$access->cod_access
+        ]);
+
+        $access= \App\Models\Access::create([
+            'name'=>'Store a newly created vehicle in storage.',
+            'endpoint'=>'/vehicles',
+            'method'=>'POST',
+        ]);
+
+        \App\Models\AccessRole::create([
+            'cod_rol'=>1,
+            'cod_access'=>$access->cod_access
+        ]);
+
+       $access=  \App\Models\Access::create([
+            'name'=>'Update the specified vehicle in storage.',
+            'endpoint'=>'/vehicles/{id}',
+            'method'=>'PUT',
+        ]);
+
+        \App\Models\AccessRole::create([
+            'cod_rol'=>1,
+            'cod_access'=>$access->cod_access
+        ]);
+
+        $access=  \App\Models\Access::create([
+            'name'=>'Remove the specified vehicle from storage.',
+            'endpoint'=>'/vehicles/{id}',
+            'method'=>'DELETE',
+        ]);
+
+        \App\Models\AccessRole::create([
+            'cod_rol'=>1,
+            'cod_access'=>$access->cod_access
+        ]);
     }
 }

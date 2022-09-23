@@ -6,6 +6,7 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VehicleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,9 @@ Route::prefix('v1')->group(function () {
     Route::group(['middleware' => 'auth:api'], function () {
         Route::resource('users',UserController::class);
         Route::resource('roles',RolController::class);
+        Route::resource('vehicles',VehicleController::class);
+        Route::post('vehicles/{vehicle}/registrationphotography',[VehicleController::class, 'updateRegistrationPhotography']);
+        Route::delete('vehicles/{vehicle}/registrationphotography',[VehicleController::class, 'deleteRegistrationPhotography']);
         Route::post('/roles/{role}/access', [RolController::class, 'setAccess']);
         Route::delete('/roles/{role}/access', [RolController::class, 'removeAccess']);
         Route::get('/access', [AccessController::class, 'index']);
