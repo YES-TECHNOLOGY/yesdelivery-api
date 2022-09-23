@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('active')->default(0)->comment('vehicle active');
             $table->enum('status',['available','not_available','disconnected'])->default('not_available')->comment('vehicle status');
 
-            $table->unsignedBigInteger('cod_user')->comment('user identifier');
+            $table->unsignedBigInteger('cod_user')->nullable()->comment('user identifier');
             $table->foreign('cod_user')
                 ->references('id')
                 ->on('users')->cascadeOnUpdate()->restrictOnDelete();
