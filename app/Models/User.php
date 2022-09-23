@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
@@ -59,13 +61,13 @@ class User extends Authenticatable
     ];
 
     /**
+     * Return the vehicles of user
      *
-     * Returns the projects that the user has
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function projects(){
-        return $this->belongsToMany(Project::class);
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class,'cod_user');
     }
 
     /**
