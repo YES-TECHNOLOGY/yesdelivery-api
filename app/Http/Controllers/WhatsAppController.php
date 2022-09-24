@@ -137,4 +137,15 @@ class WhatsAppController extends Controller
                 break;
         }
     }
+
+    public function verificationWhatsapp(Request $request){
+        $mode = $request->hub_mode;
+        $challenge= $request->hub_challenge;
+        $token = $request->hub_verify_token;
+        if ($mode && $token) {
+            if ($mode === "subscribe" && $token === '123456YES') {
+                return $challenge;
+            }
+        }
+    }
 }

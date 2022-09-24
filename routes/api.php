@@ -57,5 +57,6 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::post('/whatsapp', [WhatsAppController::class, 'receiveMessages']);
+    Route::get('/whatsapp', [WhatsAppController::class, 'verificationWhatsapp']);
 
 });
