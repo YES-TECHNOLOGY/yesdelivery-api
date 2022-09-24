@@ -75,7 +75,7 @@ class WhatsAppController extends Controller
     public function receiveMessages(Request $request){
         $data=$request->all();
         $value=$data['entry'][0]['changes'][0]['value'];
-        if($statuses=$metadata=$value['statuses'][0]){
+        if(isset($value['statuses'])&&$statuses=$value['statuses'][0]){
             $id=$statuses['id'];
             $message=Messages::where('whatsapp_id','=',$id)->first();
             if($message){
