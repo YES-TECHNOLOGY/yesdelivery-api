@@ -91,7 +91,7 @@ class WhatsAppController extends Controller
             }
             return  $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
         }
-        $metadata=$value['metadata'][0];
+        $metadata=$value['metadata'];
         $contacts= $value['contacts'][0];
         $messages=$value['messages'][0];
         $message=$value['messages'][0]['text']['body'];
