@@ -18,9 +18,9 @@ class UserSeeder extends Seeder
         \App\Models\User::create([
             'identification'=>'0000000000',
             'ruc'=>null,
-            'name'=>'User',
-            'lastname'=>'Administrator',
-            'email'=>'admin@mail.com',
+            'name'=>'YES',
+            'lastname'=>'BOT',
+            'email'=>'boot@yesdelivery.com',
             'password'=>bcrypt('123456'),
             'cod_rol'=>1
         ]);

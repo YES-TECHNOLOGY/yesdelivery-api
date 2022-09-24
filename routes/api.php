@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\WhatsAppController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('/roles/{role}/access', [RolController::class, 'removeAccess']);
         Route::get('/access', [AccessController::class, 'index']);
 
+
         Route::group(['prefix' => 'profile'], function () {
             Route::get('/', [ProfileController::class, 'me']);
             Route::put('/', [ProfileController::class, 'update']);
@@ -53,5 +55,7 @@ Route::prefix('v1')->group(function () {
         });
 
     });
+
+    Route::post('/whatsapp', [WhatsAppController::class, 'receiveMessages']);
 
 });

@@ -63,7 +63,7 @@ class User extends Authenticatable
     /**
      * Return the vehicles of user
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return HasMany
      */
     public function vehicles(): HasMany
     {
@@ -74,9 +74,19 @@ class User extends Authenticatable
      *
      * Return the role of user
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function rol(){
         return $this->belongsTo(Rol::class,'cod_rol');
+    }
+
+    /**
+     * Return the conversations of user
+     *
+     * @return HasMany
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class,'cod_user');
     }
 }
