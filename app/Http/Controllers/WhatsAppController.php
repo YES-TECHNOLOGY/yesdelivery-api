@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conversation;
+use App\Models\Log;
 use App\Models\Messages;
 use Carbon\Carbon;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Faker\Core\File;
 
 class WhatsAppController extends Controller
 {
@@ -74,6 +76,7 @@ class WhatsAppController extends Controller
 
     public function receiveMessages(Request $request){
         $data=$request->all();
+        $this->log('info',json_encode($data),'web');
         $value=$data['entry'][0]['changes'][0]['value'];
         if(isset($value['statuses'])&&$statuses=$value['statuses'][0]){
             $id=$statuses['id'];
