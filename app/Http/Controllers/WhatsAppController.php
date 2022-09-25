@@ -106,6 +106,7 @@ class WhatsAppController extends Controller
 
         $value= $data['entry'][0]['changes'][0]['value'] ?? '';
         if(!$value){
+            $this->log('alert',$data, 'web');
             return null;
         }
 
