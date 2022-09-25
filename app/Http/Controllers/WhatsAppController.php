@@ -103,13 +103,11 @@ class WhatsAppController extends Controller
 
     public function receiveMessages(Request $request){
         $data=$request->all();
-        $this->log('critical',json_encode($data), 'web');
         $value= $data['entry'][0]['changes'][0]['value'] ?? '';
         if(!$value){
-            $this->log('alert',$data, 'web');
+            $this->log('critical',json_encode($data), 'web');
             return null;
         }
-
 
         if(isset($value['statuses'])&&$statuses=$value['statuses'][0]){
             $id=$statuses['id'];
@@ -140,13 +138,13 @@ class WhatsAppController extends Controller
            ->where('deleted','!=',true)
            ->first();
         if(!$conversation){
-           $data=[
+           $dat=[
                 'recipient_phone_number'=>$remittent,
                 'display_phone_number'=>$display_phone_number,
                 'status'=>'initializer',
                 'send_user'=>0,
             ];
-            $conversation= Conversation::create($data);
+            $conversation= Conversation::create($dat);
         }
 
         $this->managementMessages($value['messages'][0],$conversation);
@@ -174,8 +172,8 @@ class WhatsAppController extends Controller
 
                 break;
             case 'order':
-                if($value['messages'][0]['type']=='text'){
-                    $sms=$value['messages'][0]['text']['body'];
+                if($value['messages'][0]['type']=='text'||$value['messages'][0]['type']=='button'){
+                    $sms=$value['messages'][0]['type']=='text'?$value['messages'][0]['text']['body']:$value['messages'][0]['button']['text'];
                     if($sms=='Taxi' || $sms == 'Delivery'){
                         $data = $this->sendMessageSimpleTemplate($remittent, 'wp_location', $phone_number_id);
                         $dat = $data->json();
