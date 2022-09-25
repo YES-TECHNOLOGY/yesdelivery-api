@@ -18,6 +18,7 @@ class Conversation extends Model
     protected $fillable=[
         'id',
         'recipient_phone_number',
+        'display_phone_number',
         'status',
         'type_order',
         'latitude',

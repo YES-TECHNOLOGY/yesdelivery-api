@@ -19,6 +19,7 @@ class Messages extends Model
         'whatsapp_id',
         'message',
         'status',
+        'type',
         'timestamp_read',
         'timestamp_delivered',
         'send_user',

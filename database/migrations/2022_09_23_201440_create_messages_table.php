@@ -17,6 +17,9 @@ return new class extends Migration
             $table->id();
             $table->text('whatsapp_id')->comment('identifier whatsapp message');
             $table->text('message');
+            $table->string('type','100');
+            $table->string('mime_type','100')->nullable();
+            $table->text('url')->nullable();
             $table->enum('status',['sent','delivered','read','failed','deleted'])->nullable();
             $table->timestamp('timestamp_read')->nullable();
             $table->timestamp('timestamp_delivered')->nullable();
