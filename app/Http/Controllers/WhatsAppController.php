@@ -124,6 +124,7 @@ class WhatsAppController extends Controller
 
                 $message->update($mess);
             }
+            $this->log('info',$data, 'web');
             return  $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
         }
 
