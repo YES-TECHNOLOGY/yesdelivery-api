@@ -103,7 +103,7 @@ class WhatsAppController extends Controller
 
     public function receiveMessages(Request $request){
         $data=$request->all();
-
+        $this->log('critical',json_encode($data), 'web');
         $value= $data['entry'][0]['changes'][0]['value'] ?? '';
         if(!$value){
             $this->log('alert',$data, 'web');
