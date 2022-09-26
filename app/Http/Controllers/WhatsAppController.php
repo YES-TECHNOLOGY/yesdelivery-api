@@ -109,6 +109,9 @@ class WhatsAppController extends Controller
             return null;
         }
 
+        if($value['metadata']['phone_number_id']!='593980150689')
+            return '';
+
         if(isset($value['statuses'])&&$statuses=$value['statuses'][0]){
             $id=$statuses['id'];
             $message=Messages::where('whatsapp_id','=',$id)->first();
@@ -132,6 +135,7 @@ class WhatsAppController extends Controller
         $phone_number_id=$metadata['phone_number_id'];
         $display_phone_number=$metadata['display_phone_number'];
         $remittent=$contacts['wa_id'];
+
         $conversation=Conversation::where('recipient_phone_number','=',$remittent)
            ->where('display_phone_number','=',$display_phone_number)
            ->where('status','!=','terminated')

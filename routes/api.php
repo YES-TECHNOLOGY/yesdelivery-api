@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\MessagesController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UserController;
@@ -44,7 +45,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/roles/{role}/access', [RolController::class, 'setAccess']);
         Route::delete('/roles/{role}/access', [RolController::class, 'removeAccess']);
         Route::get('/access', [AccessController::class, 'index']);
-
+        Route::resource('/messages',MessagesController::class);
 
         Route::group(['prefix' => 'profile'], function () {
             Route::get('/', [ProfileController::class, 'me']);
