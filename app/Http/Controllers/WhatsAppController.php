@@ -246,7 +246,6 @@ class WhatsAppController extends Controller
                         'type'=>'template'
                     ];
                     Messages::create($message);
-                    $this->sendMessageText($remittent,'Gracias!!',$phone_number_id);
                     $this->log('info', $data, 'web');
                     return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                 }
@@ -293,7 +292,7 @@ class WhatsAppController extends Controller
             case 'assigning':
                 break;
         }
-        $this->log('critical',json_encode($data),'web');
+        $this->log('info',json_encode($data),'web');
         return $this->response('false', \Illuminate\Http\Response::HTTP_BAD_REQUEST, '400 Bad Request');
     }
 
