@@ -20,18 +20,29 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'type_identification',
         'identification',
         'name',
         'lastname',
         'email',
         'gender',
-        'active',
+        'cellphone',
+        'date_birth',
+        'cod_nationality',
+        'cod_dpa',
+        'address',
+        'size',
         'password',
         'photography',
+        'identification_front_photography',
+        'identification_back_photography',
+        'verified',
+        'email_verified_at',
+        'remember_token_valid_time',
+        'active',
+        'google_id',
         'cod_rol',
-        'driving_license_photography',
-        'remember_token',
-        'remember_token_valid_time'
+        'cod_dpa'
     ];
 
     /**
@@ -78,6 +89,28 @@ class User extends Authenticatable
      */
     public function rol(){
         return $this->belongsTo(Rol::class,'cod_rol');
+    }
+
+    /**
+     *
+     * Return the role of user
+     *
+     * @return BelongsTo
+     */
+    public function nationality(): BelongsTo
+    {
+        return $this->belongsTo(Country::class,'cod_nationality');
+    }
+
+    /**
+     *
+     * Return the role of user
+     *
+     * @return BelongsTo
+     */
+    public function dpa(): BelongsTo
+    {
+        return $this->belongsTo(Dpa::class,'cod_dpa');
     }
 
     /**

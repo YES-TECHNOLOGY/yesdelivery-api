@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\SendTokenResetPassword;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -45,9 +46,8 @@ class AuthController extends Controller
      * Login User
      *
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
-    public function login(Request $request):JsonResponse
+    public function login(Request $request)
     {
        $data=[
             'email'=> Request("email"),
@@ -63,13 +63,11 @@ class AuthController extends Controller
         $tokenParts = explode(".", $tokenResult['access_token']);
         $tokenPayload = base64_decode($tokenParts[1]);
         $jwtPayload = json_decode($tokenPayload);
-        $jwtexp=   \DateTimeImmutable::createFromFormat(
-            'U.u',
-            $jwtPayload->exp,
-        )->setTimezone(new \DateTimeZone('America/Guayaquil'))->format('Y-m-d H:i:s');
-
-        $jwtexp= date(DATE_ISO8601, strtotime($jwtexp));
+        $jwtexp=   Carbon::createFromTimestamp($jwtPayload->exp)->toIso8601String();
         $user = User::where('email','=',$data['email'])->first();
+        $user['rol']=$user->rol;
+        $user['nationality']=$user->nationality;
+        $user['dpa']=$user->dpa;
         $data=[
             'user'=>$user,
             'access_token'=>[
@@ -109,12 +107,7 @@ class AuthController extends Controller
         $tokenParts = explode(".", $response['access_token']);
         $tokenPayload = base64_decode($tokenParts[1]);
         $jwtPayload = json_decode($tokenPayload);
-        $jwtexp=   \DateTimeImmutable::createFromFormat(
-            'U.u',
-            $jwtPayload->exp,
-        )->setTimezone(new \DateTimeZone('America/Guayaquil'))->format('Y-m-d H:i:s');
-
-        $jwtexp= date(DATE_ISO8601, strtotime($jwtexp));
+        $jwtexp= Carbon::createFromTimestamp($jwtPayload->exp)->toIso8601String();
 
         $data=[
             'access_token'=>[

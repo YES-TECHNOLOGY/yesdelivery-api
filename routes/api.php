@@ -51,7 +51,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [ProfileController::class, 'me']);
             Route::put('/', [ProfileController::class, 'update']);
             Route::post('photography', [ProfileController::class, 'updatePhotography']);
-            Route::post('license', [ProfileController::class, 'updateDrivingLicensePhotography']);
+            Route::post('identification', [ProfileController::class, 'updateIdentificationPhotography']);
 
         });
 

@@ -28,6 +28,9 @@ class UserController extends Controller
         foreach ($users as $user) {
             $this->generatePhotographyUrl($user);
             $this->generateLicenceUrl($user);
+            $user['rol']=$user->rol;
+            $user['nationality']=$user->nationality;
+            $user['dpa']=$user->dpa;
         }
         return $this->response('false',Response::HTTP_OK,'200 OK',$users,true);
     }
@@ -44,16 +47,25 @@ class UserController extends Controller
         Controller::verifyPermissions($request->user(),'POST','/users');
         $data=[];
         $edit_permission=[
+            'type_identification',
             'identification',
-            'ruc',
             'name',
             'lastname',
             'email',
             'gender',
+            'cellphone',
+            'date_birth',
+            'cod_nationality',
+            'cod_dpa',
+            'address',
+            'size',
             'password',
+            'photography',
+            'identification_front_photography',
+            'identification_back_photography',
             'verified',
             'active',
-            'cod_rol'
+            'cod_rol',
         ];
 
         foreach ($edit_permission as $d){
@@ -63,15 +75,22 @@ class UserController extends Controller
         }
 
         $validate=\Validator::make($data,[
-            'identification'=>['required','unique:users',new isCedula],
+            'type_identification'=>'in:cedula,visa,passport|required',
+            'identification'=>['required','unique:users'],
             'name'=> 'required',
             'lastname'=> 'required',
             'email'=> 'email|unique:users|required',
             'gender'=>'in:female,male,other|required',
+            'cellphone'=>'required|min:9|max:10',
+            'date_birth'=>'date|required',
+            'cod_nationality'=>'exists:countries,id|required',
+            'cod_dpa'=>'exists:dpas,cod_dpa|required',
+            'address'=>'required',
+            'size'=>'in:XS,S,M,L,XL,XXL,Other',
             'password'=>'required',
             'verified'=>'boolean',
             'active'=>'boolean',
-            'cod_rol'=>'exists:rols,cod_rol|required'
+            'cod_rol'=>'exists:rols,cod_rol|required',
         ],$this->messages);
 
         if ($validate->fails())
@@ -80,7 +99,6 @@ class UserController extends Controller
         }
 
         $data['password']=bcrypt($data['password']);
-
 
         $user = User::create($data);
         $log="The user '".$request->user()->id."' create user '$user->id'";
@@ -100,6 +118,9 @@ class UserController extends Controller
     {
         Controller::verifyPermissions($request->user(),'GET','/users');
         $user=User::findOrFail($id);
+        $user['rol']=$user->rol;
+        $user['nationality']=$user->nationality;
+        $user['dpa']=$user->dpa;
         $this->generatePhotographyUrl($user);
         $this->generateLicenceUrl($user);
         return $this->response('false',Response::HTTP_OK,'200 OK',$user);
@@ -113,41 +134,60 @@ class UserController extends Controller
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request, $id): JsonResponse
+    public function update(Request $request, $id)
     {
         $user=User::findOrFail($id);
         Controller::verifyPermissions($request->user(),'PUT','/users/{id}');
         $data=[];
+        $validations=[
+           'type_identification'=>'in:cedula,visa,passport|required',
+           'identification'=>['required','unique:users,identification,'.$user->id],
+           'name'=> 'required',
+           'lastname'=> 'required',
+           'email'=> 'email|unique:users,email,'.$user->id.'|required',
+           'gender'=>'in:female,male,other|required',
+           'cellphone'=>'required|min:9|max:10',
+           'date_birth'=>'date|required',
+           'cod_nationality'=>'exists:countries,id|required',
+           'cod_dpa'=>'exists:dpas,cod_dpa|required',
+           'address'=>'required',
+           'size'=>'in:XS,S,M,L,XL,XXL,Other',
+           'password'=>'required',
+           'verified'=>'boolean',
+           'active'=>'boolean',
+           'cod_rol'=>'exists:rols,cod_rol|required',
+        ];
+        $validator=[];
         $edit_permission=[
+            'type_identification',
             'identification',
-            'ruc',
             'name',
             'lastname',
             'email',
             'gender',
+            'cellphone',
+            'date_birth',
+            'cod_nationality',
+            'cod_dpa',
+            'address',
+            'size',
             'password',
+            'photography',
+            'identification_front_photography',
+            'identification_back_photography',
             'verified',
             'active',
-            'cod_rol'
+            'cod_rol',
         ];
 
         foreach ($edit_permission as $d){
             if(isset($request->$d)){
                 $data[$d]=$request->$d;
+                $validator[$d]=$validations[$d];
             }
         }
 
-        $validate=\Validator::make($data,[
-            'identification'=>['required','unique:users,identification,'.$user->id,new isCedula],
-            'name'=> 'required',
-            'lastname'=> 'required',
-            'email'=> 'email|unique:users,email,'.$user->id.'|required',
-            'gender'=>'in:female,male,other|required',
-            'password'=>'required',
-            'verified'=>'boolean',
-            'active'=>'boolean',
-            'cod_rol'=>'exists:rols,cod_rol|required'
-        ],$this->messages);
+        $validate=\Validator::make($data,$validator,$this->messages);
 
         if ($validate->fails())
         {
