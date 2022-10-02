@@ -35,6 +35,9 @@ class Conversation extends Model
      * @var array<int, string>
      */
     protected $hidden=[
+        'recipient_phone_number',
+        'display_phone_number',
+        'cod_user',
         'deleted',
         'created_at',
         'updated_at',

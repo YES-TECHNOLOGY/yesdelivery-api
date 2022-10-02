@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Conversation;
 use App\Models\Messages;
 use Illuminate\Http\Request;
 
 class MessagesController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the conversations.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+       return Conversation::where('cod_user','=',$request->user()->id)
+           ->where('deleted','!=',true)
+           ->get();
     }
 
     /**
