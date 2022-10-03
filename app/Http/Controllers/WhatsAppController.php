@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use App\Models\Log;
 use App\Models\Messages;
+use App\Models\WhatsappNumber;
 use Carbon\Carbon;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Http\Client\Response;
@@ -62,10 +63,39 @@ class WhatsAppController extends Controller
             "to"=> $remittent,
             "type"=> "template",
             "template"=> [
-                    "name"=> $template,
+                "name"=> $template,
                 "language"=> [
                         "code"=> "es_MX"
                 ]
+            ]
+        ];
+        return Http::withHeaders([
+            'Content-Type'=>'application/json',
+            'Authorization'=>"Bearer $token"
+        ])->post("https://graph.facebook.com/$wp_version/$phone_number_id/messages",$data);
+    }
+
+    private function sendMessageParamsTemplate($remittent,$template,$parameters,$phone_number_id)
+    {
+        $token=env('WHATSAPP_TOKEN');
+        $wp_version=env('WHATSAPP_VERSION');
+
+        $data= [
+            "messaging_product"=> "whatsapp",
+            "recipient_type"=> "individual",
+            "to"=> $remittent,
+            "type"=> "template",
+            "template"=> [
+                "name"=> $template,
+                "language"=> [
+                    "code"=> "es_MX"
+                ],
+                "components"=> array(
+                    array(
+                         "type"=> "body",
+                         "parameters"=> $parameters
+                    )
+                )
             ]
         ];
         return Http::withHeaders([
@@ -118,11 +148,25 @@ class WhatsAppController extends Controller
             if(isset($message)&&$message){
                 $status=$statuses['status'];
                 $timestamp=Carbon::createFromTimestamp($statuses['timestamp']);
-                $mess['status']=$status;
-                if($status=='delivered')
+
+                if($status=='delivered'){
                     $mess['timestamp_delivered']=$timestamp;
-                if($status=='read')
+                }
+                if($status=='read'){
                     $mess['timestamp_read']=$timestamp;
+                }
+
+                if($message->status!='read' && $status=='delivered') {
+                    $mess['status']=$status;
+                }
+
+                if($message->status!='read'&&$status=='delivered'){
+                    $mess['status']=$status;
+                }
+
+                if($message->status!='delivered'&&$status=='read') {
+                    $mess['status']=$status;
+                }
 
                 $message->update($mess);
             }
@@ -136,26 +180,96 @@ class WhatsAppController extends Controller
         $display_phone_number=$metadata['display_phone_number'];
         $remittent=$contacts['wa_id'];
 
-        $conversation=Conversation::where('recipient_phone_number','=',$remittent)
-           ->where('display_phone_number','=',$display_phone_number)
+        $wp_number=WhatsappNumber::where('number','=',$remittent)->first();
+
+       if(!$wp_number){
+
+         $dat=[
+            'number'=>$remittent
+         ];
+         $new_number= WhatsappNumber::create($dat);
+
+         $dat_conv=[
+               'recipient_phone_number'=>$new_number->id,
+               'display_phone_number'=>$display_phone_number,
+               'status'=>'name',
+               'send_user'=>0,
+         ];
+
+        $conv=Conversation::create($dat_conv);
+        if(!$conv){
+            $this->log('critical',$dat_conv, 'web');
+            return  $this->response('true', \Illuminate\Http\Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+        }
+
+        $this->managementMessages($value['messages'][0],$conv);
+
+        $message='Para poder brindarte un mejor servicio, por favor ingresa tu nombre.';
+        $data=$this->sendMessageText($remittent,$message,$phone_number_id);
+        $d=$data->json();
+
+        if($data->ok()){
+            $message=[
+                'whatsapp_id'=>$d['messages'][0]['id'],
+                'message'=>$message,
+                'conversation_id'=>$conv->id,
+                'type'=>'template',
+                'send_user'=>0,
+            ];
+            Messages::create($message);
+
+            $conver=[
+                'status'=>'name'
+            ];
+
+            $conv->update($conver);
+            $this->log('info',$data,'web');
+            return  $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
+           }
+
+       }
+
+       $conversation=$wp_number->conversations->where('display_phone_number','=',$display_phone_number)
            ->where('status','!=','terminated')
            ->where('deleted','!=',true)
            ->first();
-        if(!$conversation){
-           $dat=[
-                'recipient_phone_number'=>$remittent,
-                'display_phone_number'=>$display_phone_number,
-                'status'=>'initializer',
-                'send_user'=>0,
-            ];
-            $conversation= Conversation::create($dat);
-        }
 
         $this->managementMessages($value['messages'][0],$conversation);
 
         switch ($conversation['status']){
+            case 'name':
+                if($value['messages'][0]['type']!='text'){
+                    $message='Disculpa no logré entenderte, por favor ingresa tu nombre.';
+                    $data = $this->sendMessageText($remittent, $message, $phone_number_id);
+                    $dat = $data->json();
+                    if ($data->ok()) {
+                        $message = [
+                            'whatsapp_id' => $dat['messages'][0]['id'],
+                            'message' => $message,
+                            'send_user'=>0,
+                            'conversation_id' => $conversation->id,
+                            'type'=>'text'
+                        ];
+                        Messages::create($message);
+                        $this->log('info', json_encode($data), 'web');
+                        return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
+                    }
+                }
+
+                $name=$value['messages'][0]['text']['body'];
+                $name=[
+                    'name'=>$name
+                ];
+                $wp_number->update($name);
+
             case 'initializer':
-                $data=$this->sendMessageSimpleTemplate($remittent,'wp_initializer',$phone_number_id);
+                $parameters=array(
+                    array(
+                        "type"=> "text",
+                        "text"=> $wp_number->name,
+                    )
+                );
+                $data=$this->sendMessageParamsTemplate($remittent,'wp_initializer_pro',$parameters,$phone_number_id);
                 $dat=$data->json();
                 if($data->ok()){
                     $message=[
@@ -178,7 +292,11 @@ class WhatsAppController extends Controller
             case 'order':
                 if($value['messages'][0]['type']=='text'||$value['messages'][0]['type']=='button'){
                     $sms=$value['messages'][0]['type']=='text'?$value['messages'][0]['text']['body']:$value['messages'][0]['button']['text'];
-                    if($sms=='Taxi' || $sms == 'Delivery'){
+                    $sms=ucfirst(strtolower($sms));
+                    if($sms=='Taxi' || $sms == 'Pedido'){
+                        if($sms=='Pedido')
+                            $sms='Delivery';
+
                         $data = $this->sendMessageSimpleTemplate($remittent, 'wp_location', $phone_number_id);
                         $dat = $data->json();
                         if ($data->ok()) {
@@ -201,7 +319,7 @@ class WhatsAppController extends Controller
                     }
                 }
 
-                $data = $this->sendMessageSimpleTemplate($remittent, 'wp_not_found_message_order', $phone_number_id);
+                $data = $this->sendMessageSimpleTemplate($remittent, 'wp_error_message_order', $phone_number_id);
                 $dat = $data->json();
                 if ($data->ok()) {
                     $message = [
