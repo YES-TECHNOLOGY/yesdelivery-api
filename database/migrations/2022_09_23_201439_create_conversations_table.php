@@ -26,6 +26,11 @@ return new class extends Migration
             $table->foreign('recipient_phone_number')
                 ->references('id')
                 ->on('whatsapp_numbers')->cascadeOnUpdate()->cascadeOnDelete();
+                
+            $table->unsignedBigInteger('cod_user')->nullable()->comment('user identifier');
+            $table->foreign('cod_user')
+                  ->references('id')
+                  ->on('users')->cascadeOnUpdate()->restrictOnDelete();    
             $table->timestamps();
         });
     }

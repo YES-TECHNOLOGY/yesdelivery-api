@@ -19,6 +19,7 @@ Route::get('/', function () {
 });
 
 Route::get('/image/{img}',[FileController::class,'viewImage']);
+Route::get('/demo',[\App\Http\Controllers\WhatsAppController::class,'isWithin']);
 
 Route::get('/forgot-password', function () {
     return view('auth.forgot-password');

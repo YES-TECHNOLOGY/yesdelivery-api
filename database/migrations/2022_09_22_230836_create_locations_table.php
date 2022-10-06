@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('cod_vehicle')->comment('vehicle identifier');
             $table->foreign('cod_vehicle')
                 ->references('id')
-                ->on('vehicles')->cascadeOnUpdate()->restrictOnDelete();
+                ->on('vehicles')->cascadeOnUpdate()->cascadeOnDelete();
             $table->timestamps();
         });
     }

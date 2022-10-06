@@ -9,6 +9,7 @@
         "fruitcake/laravel-cors": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
         "intervention/image": "^2.7",
+        "jenssegers/mongodb": "^3.9",
         "laravel/framework": "^9.0",
         "laravel/passport": "^11.1",
         "laravel/sanctum": "^2.11",

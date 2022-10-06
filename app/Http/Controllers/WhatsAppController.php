@@ -111,7 +111,7 @@ class WhatsAppController extends Controller
                     $message=[
                         'whatsapp_id'=>$message['id'],
                         'message'=>$message['text']['body'],
-                        'send_user'=>1,
+                        'send_user'=>0,
                         'conversation_id'=>$conversation->id,
                         'type'=>'text'
                     ];
@@ -121,9 +121,9 @@ class WhatsAppController extends Controller
                     $message=[
                         'whatsapp_id'=>$message['id'],
                         'message'=>json_encode($message['location']),
-                        'send_user'=>1,
+                        'send_user'=>0,
                         'conversation_id'=>$conversation->id,
-                        'type'=>'text'
+                        'type'=>'location'
                     ];
                     Messages::create($message);
                     break;
@@ -193,7 +193,8 @@ class WhatsAppController extends Controller
                'recipient_phone_number'=>$new_number->id,
                'display_phone_number'=>$display_phone_number,
                'status'=>'name',
-               'send_user'=>0,
+               'cod_user'=>1,
+               'send_user'=>1,
          ];
 
         $conv=Conversation::create($dat_conv);
@@ -214,7 +215,7 @@ class WhatsAppController extends Controller
                 'message'=>$message,
                 'conversation_id'=>$conv->id,
                 'type'=>'template',
-                'send_user'=>0,
+                'send_user'=>1,
             ];
             Messages::create($message);
 
@@ -246,7 +247,7 @@ class WhatsAppController extends Controller
                         $message = [
                             'whatsapp_id' => $dat['messages'][0]['id'],
                             'message' => $message,
-                            'send_user'=>0,
+                            'send_user'=>1,
                             'conversation_id' => $conversation->id,
                             'type'=>'text'
                         ];
@@ -277,7 +278,7 @@ class WhatsAppController extends Controller
                         'message'=>'send template wp_initializer',
                         'conversation_id'=>$conversation->id,
                         'type'=>'template',
-                        'send_user'=>0,
+                        'send_user'=>1,
                     ];
                     Messages::create($message);
                     $conver=[
@@ -303,7 +304,7 @@ class WhatsAppController extends Controller
                             $message = [
                                 'whatsapp_id' => $dat['messages'][0]['id'],
                                 'message' => 'send template wp_location',
-                                'send_user'=>0,
+                                'send_user'=>1,
                                 'conversation_id' => $conversation->id,
                                 'type'=>'template'
                             ];
@@ -325,7 +326,7 @@ class WhatsAppController extends Controller
                     $message = [
                         'whatsapp_id' => $dat['messages'][0]['id'],
                         'message' => 'send template wp_not_found_message_order',
-                        'send_user'=>0,
+                        'send_user'=>1,
                         'conversation_id' => $conversation->id,
                         'type'=>'template'
                     ];
@@ -342,7 +343,7 @@ class WhatsAppController extends Controller
                         $message = [
                             'whatsapp_id' => $dat['messages'][0]['id'],
                             'message' => 'send template wp_location',
-                            'send_user'=>0,
+                            'send_user'=>1,
                             'conversation_id' => $conversation->id,
                             'type'=>'template'
                         ];
@@ -363,7 +364,7 @@ class WhatsAppController extends Controller
                     $message = [
                         'whatsapp_id' => $dat['messages'][0]['id'],
                         'message' => 'send template wp_error_location',
-                        'send_user'=>0,
+                        'send_user'=>1,
                         'conversation_id' => $conversation->id,
                         'type'=>'template'
                     ];
@@ -382,7 +383,7 @@ class WhatsAppController extends Controller
                             $message = [
                                 'whatsapp_id' => $dat['messages'][0]['id'],
                                 'message' => 'En unos minutos te asignaremos una unidad.',
-                                'send_user'=>0,
+                                'send_user'=>1,
                                 'conversation_id' => $conversation->id,
                                 'type'=>'text'
                             ];
@@ -402,7 +403,7 @@ class WhatsAppController extends Controller
                     $message = [
                         'whatsapp_id' => $dat['messages'][0]['id'],
                         'message' => 'send template wp_error_reference',
-                        'send_user'=>0,
+                        'send_user'=>1,
                         'conversation_id' => $conversation->id,
                         'type'=>'template'
                     ];
@@ -412,6 +413,8 @@ class WhatsAppController extends Controller
                 }
                 break;
             case 'assigning':
+                $data = $this->sendMessageText($remittent,'En unos minutos te asignaremos una unidad.',$phone_number_id);
+               return $dat = $data->json();
                 break;
         }
         $this->log('info',json_encode($data),'web');
@@ -428,4 +431,49 @@ class WhatsAppController extends Controller
             }
         }
     }
+
+    public function isWithin(){
+        $org=[-1.590270233704707, -79.00484654680204];
+        $dst=[-1.5869181255795615, -78.99525591268554];
+       return GeoLocationController::isWithin($org,$dst);
+
+        /*$org=[64.88907365760862, -159.51051578229257];
+        $dst=[-4.912403233449302, -60.68140854968768];*/
+
+       /* $lat0 = $org[0];
+        $lng0 = $org[1];
+
+        $lat1 = $dst[0];
+        $lng1 = $dst[1];
+
+        $rlat0 = deg2rad($lat0);
+        $rlng0 = deg2rad($lng0);
+        $rlat1 = deg2rad($lat1);
+        $rlng1 = deg2rad($lng1);
+
+        $latDelta = $rlat1 - $rlat0;
+        $lonDelta = $rlng1 - $rlng0;
+
+        $distance = (6371 *
+            acos(
+                cos($rlat0) * cos($rlat1) * cos($lonDelta) +
+                sin($rlat0) * sin($rlat1)
+            )
+        );
+
+        echo 'distanct arcosine ' . $distance;
+
+        $distance2 = 6371 * 2 * asin(
+                sqrt(
+                    cos($rlat0) * cos($rlat1) * pow(sin($lonDelta / 2), 2) +
+                    pow(sin($latDelta / 2), 2)
+                )
+            );
+
+        echo '<br>distance haversine ' . $distance2;*/
+    }
+
+
+
+
 }

@@ -26,6 +26,10 @@ return new class extends Migration
             $table->boolean('send_user');
             $table->unsignedBigInteger('conversation_id')->comment('identifier conversation');
             $table->timestamps();
+
+            $table->foreign('conversation_id')
+                ->references('id')
+                ->on('conversations')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

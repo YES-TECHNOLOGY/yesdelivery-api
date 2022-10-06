@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('whatsapp_numbers', function (Blueprint $table) {
             $table->id();
             $table->string('name','100')->nullable()->comment('name of the user number');
-            $table->string('number','20')->comment('number');
+            $table->string('number','20')->unique()->comment('number');
             $table->timestamps();
         });
     }
