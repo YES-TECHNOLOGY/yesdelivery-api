@@ -24,6 +24,11 @@ class Dpa extends Model
         'update_at'
     ];
 
+    protected $hidden=[
+        'created_at',
+        'updated_at'
+    ];
+
     public function subDpa(){
         return $this->hasMany(Dpa::class,'dpa_parent');
     }

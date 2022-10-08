@@ -159,5 +159,52 @@ class AccessSeeder extends Seeder
             'cod_rol'=>1,
             'cod_access'=>$access->cod_access
         ]);
+
+
+        $access=  \App\Models\Access::create([
+            'name'=>'Display a listing of to operate cities',
+            'endpoint'=>'/cities',
+            'method'=>'GET',
+        ]);
+
+        \App\Models\AccessRole::create([
+            'cod_rol'=>1,
+            'cod_access'=>$access->cod_access
+        ]);
+
+        $access=  \App\Models\Access::create([
+            'name'=>'Store a newly created operated city in storage.',
+            'endpoint'=>'/cities',
+            'method'=>'POST',
+        ]);
+
+        \App\Models\AccessRole::create([
+            'cod_rol'=>1,
+            'cod_access'=>$access->cod_access
+        ]);
+
+
+
+        $access=  \App\Models\Access::create([
+            'name'=>'Update the specified operated city in storage.',
+            'endpoint'=>'/cities/{id}',
+            'method'=>'PUT',
+        ]);
+
+        \App\Models\AccessRole::create([
+            'cod_rol'=>1,
+            'cod_access'=>$access->cod_access
+        ]);
+
+        $access=  \App\Models\Access::create([
+            'name'=>'Update the specified operated city in storage.',
+            'endpoint'=>'/cities/{id}',
+            'method'=>'DELETE',
+        ]);
+
+        \App\Models\AccessRole::create([
+            'cod_rol'=>1,
+            'cod_access'=>$access->cod_access
+        ]);
     }
 }
