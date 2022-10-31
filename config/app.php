@@ -174,8 +174,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        Intervention\Image\ImageServiceProvider::class,
-        Jenssegers\Mongodb\MongodbServiceProvider::class,
+        Intervention\Image\ImageServiceProvider::class
     ],
 
     /*
