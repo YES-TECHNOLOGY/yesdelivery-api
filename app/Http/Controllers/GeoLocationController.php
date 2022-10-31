@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OperateCity;
 use Illuminate\Http\Request;
 
 class GeoLocationController extends Controller
@@ -14,7 +15,7 @@ class GeoLocationController extends Controller
      * @param float $radio
      * @return bool
      */
-    public static function isWithin(array $origin, array $destination, float $radio=5.0): bool
+    public static function isWithin(array $origin, array $destination, float $radio=1): bool
     {
 
         $lat0 = $origin[0];
@@ -41,7 +42,53 @@ class GeoLocationController extends Controller
         return $distance<=$radio;
     }
 
-    public function nearbyVehicles($location){
+    public static function getCityLocatedClient($location_client,$type){
+        $city =OperateCity::where('type','=',$type)->get();
+        foreach ($city as  $value) {
+            $polygon=$value->polygon->features[0]->geometry->coordinates[0];
+            $point=array('lat'=>$location_client['lat'],'lng'=>$location_client['lng']);
+            $isWithinPolygon=GeoLocationController::isWithinPolygon($point,$polygon,false);
+            if($isWithinPolygon){
+                return $value;
+            }
+        }
+        return false;
+    }
 
+    public static function isWithinPolygon($point=array(), $polygon=array(), $pointOnVertex = true) {
+        $vertices = [];
+        foreach ($polygon as $vertex) {
+            $vertices[] = ['lat' => $vertex[1],
+                'lng' => $vertex[0]
+            ];
+        }
+
+        $intersections = 0;
+        $vertices_count = count($vertices);
+        for ($i=1; $i < $vertices_count; $i++) {
+            $vertex1 = $vertices[$i-1];
+            $vertex2 = $vertices[$i];
+            if ($vertex1['lat'] == $vertex2['lat'] && $vertex1['lng'] == $vertex2['lng']) {
+                if ($point == $vertex1) {
+                    return $pointOnVertex;
+                }
+                continue;
+            }
+            if ($point['lat'] > min($vertex1['lat'], $vertex2['lat']) && $point['lat'] <= max($vertex1['lat'], $vertex2['lat']) && $point['lng'] <= max($vertex1['lng'], $vertex2['lng']) && $vertex1['lat'] != $vertex2['lat']) {
+                $xinters = ($point['lat']-$vertex1['lat'])*($vertex2['lng']-$vertex1['lng'])/($vertex2['lat']-$vertex1['lat'])+$vertex1['lng'];
+                if ($xinters == $point['lng']) {
+                    return $pointOnVertex;
+                }
+                if ($vertex1['lng'] == $vertex2['lng'] || $point['lng'] <= $xinters) {
+                    $intersections++;
+                }
+            }
+        }
+
+        if ($intersections % 2 != 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

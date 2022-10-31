@@ -15,7 +15,8 @@ return new class extends Migration
     {
         Schema::create('operate_cities', function (Blueprint $table) {
             $table->id();
-            $table->string('type','100')->comment('type of plan, for example delivery, taxi, if premium.');
+            $table->string('name','100')->comment('name of plan, for example delivery, taxi, if premium.');
+            $table->enum('type',['delivery','taxi'])->comment('type of plan, for example delivery or taxi');
             $table->float('minimum_price')->comment('minimum price for the plan.');
             $table->float('night_km_price')->comment('price per km for night');
             $table->float('day_km_price')->comment('price per km for day');
@@ -26,12 +27,13 @@ return new class extends Migration
             $table->time('night_end_time')->comment('end time for night');
             $table->boolean('active')->default(true)->comment('if the operate city is active');
             $table->text('comment')->nullable()->comment('comment for the operate city');
+            $table->json('polygon')->comment('polygon for the operate city');
             $table->unsignedBigInteger('cod_dpa')->comment('dpa identifier');
             $table->foreign('cod_dpa')
                 ->references('cod_dpa')
                 ->on('dpas')->cascadeOnUpdate();
             $table->timestamps();
-            $table->unique(['type','cod_dpa']);
+            $table->unique(['name','cod_dpa']);
         });
     }
 

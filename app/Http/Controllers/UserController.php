@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\File;
+use App\Models\OperateCity;
+use App\Models\OperateCityUser;
 use App\Models\User;
 use App\Rules\isCedula;
 use Illuminate\Http\JsonResponse;
@@ -257,5 +259,55 @@ class UserController extends Controller
             $image=File::find($d->driving_license_photography);
             $d->driving_license_photography=FileController::generateImageUrl($image);
         }
+    }
+
+    /**
+     * Add operate city to user
+     *
+     * @param Request $request
+     * @param $id
+     * @return JsonResponse
+     */
+    public function operateCityStore(Request $request,$id)
+    {
+        $user=User::findOrFail($id);
+        Controller::verifyPermissions($request->user(),'PUT','/users/{id}');
+        $data=[
+            "cod_user"=>$user->id,
+        ];
+        $edit_permission=[
+            "cod_operate_city",
+            "start_date",
+            "end_date",
+            "comment",
+            "active"
+        ];
+
+        foreach ($edit_permission as $d){
+            if(isset($request->$d)){
+                $data[$d]=$request->$d;
+            }
+        }
+
+        $validate=\Validator::make($data,[
+            'cod_operate_city'=>'exists:operate_cities,id|required|unique:operate_city_user,cod_operate_city,NULL,id,cod_user,'.$user->id,
+            'start_date'=>'date_format:Y/m/d|required|after_or_equal:'.now()->toDateString(),
+            'end_date'=>'date',
+            'active'=>'boolean',
+        ],$this->messages);
+
+        if ($validate->fails())
+        {
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $validate->errors());
+        }
+
+        $op = OperateCityUser::create($data);
+        $log="The user '".$request->user()->id."' add operate city to user  '$op->id'";
+        $this->log('info',$log,'web',$request->user());
+        return $this->response(false, Response::HTTP_CREATED, '201 Created',$op);
+    }
+
+    public function operateCityUpdate(Request $request,$id){
+
     }
 }

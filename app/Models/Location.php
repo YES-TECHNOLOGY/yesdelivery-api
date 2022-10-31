@@ -17,9 +17,12 @@ class Location extends Model
     ];
 
     protected $hidden = [
-        'created_at',
-        'updated_at',
         'cod_vehicle'
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
 }

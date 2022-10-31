@@ -24,7 +24,8 @@ class WhatsAppController extends Controller
      * @param $phone_number_id
      * @return PromiseInterface|Response
      */
-    private function sendMessageText($remittent,$message,$phone_number_id){
+    public static function sendMessageText($remittent,$message,$phone_number_id): PromiseInterface|Response
+    {
         $token=env('WHATSAPP_TOKEN');
         $wp_version=env('WHATSAPP_VERSION');
         $data=[
@@ -75,7 +76,15 @@ class WhatsAppController extends Controller
         ])->post("https://graph.facebook.com/$wp_version/$phone_number_id/messages",$data);
     }
 
-    private function sendMessageParamsTemplate($remittent,$template,$parameters,$phone_number_id)
+    /**
+     * Send Messages type template with Whatsapp
+     * @param $remittent
+     * @param $template
+     * @param $parameters
+     * @param $phone_number_id
+     * @return PromiseInterface|Response
+     */
+    public static function sendMessageParamsTemplate($remittent, $template, $parameters, $phone_number_id): PromiseInterface|Response
     {
         $token=env('WHATSAPP_TOKEN');
         $wp_version=env('WHATSAPP_VERSION');
@@ -192,6 +201,7 @@ class WhatsAppController extends Controller
          $dat_conv=[
                'recipient_phone_number'=>$new_number->id,
                'display_phone_number'=>$display_phone_number,
+               'phone_number_id'=>$phone_number_id,
                'status'=>'name',
                'cod_user'=>1,
                'send_user'=>1,
@@ -234,6 +244,23 @@ class WhatsAppController extends Controller
            ->where('status','!=','terminated')
            ->where('deleted','!=',true)
            ->first();
+
+       if(!$conversation){
+           $dat_conv=[
+               'recipient_phone_number'=>$wp_number->id,
+               'display_phone_number'=>$display_phone_number,
+               'status'=>'initializer',
+               'phone_number_id'=>$phone_number_id,
+               'cod_user'=>1,
+               'send_user'=>1,
+           ];
+
+           $conversation=Conversation::create($dat_conv);
+           if(!$conversation){
+               $this->log('critical',$dat_conv, 'web');
+               return  $this->response('true', \Illuminate\Http\Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+           }
+       }
 
         $this->managementMessages($value['messages'][0],$conversation);
 
@@ -376,20 +403,31 @@ class WhatsAppController extends Controller
                 break;
             case 'reference':
                 if($value['messages'][0]['type']=='text'){
-                    $sms=$value['messages'][0]['text']['body'];
-                        $data = $this->sendMessageText($remittent,'En unos minutos te asignaremos una unidad.',$phone_number_id);
+                    $smsr=$value['messages'][0]['text']['body'];
+                    $location_client = [
+                        'lat'=>$conversation->latitude,
+                        'lng'=>$conversation->longitude
+                    ];
+
+                    $city=GeoLocationController::getCityLocatedClient($location_client,$conversation->type_order);
+
+                    $sms=(!$city)?"Lo sentimos, te encuentras fuera de nuestra área de servicio.":
+                        "En unos minutos te asignaremos una unidad.";
+                        $data = $this->sendMessageText($remittent,$sms,$phone_number_id);
                         $dat = $data->json();
                         if ($data->ok()) {
                             $message = [
                                 'whatsapp_id' => $dat['messages'][0]['id'],
-                                'message' => 'En unos minutos te asignaremos una unidad.',
+                                'message' => $sms,
                                 'send_user'=>1,
                                 'conversation_id' => $conversation->id,
                                 'type'=>'text'
                             ];
                             Messages::create($message);
                             $conver=[
-                                'status'=>'assigning',
+                                'reference'=>$smsr,
+                                'status'=>($city)?'assigning':'terminated',
+                                'operate_city_id'=>($city)?$city->id:null
                             ];
                             $conversation->update($conver);
                             $this->log('info',$data, 'web');
@@ -413,7 +451,17 @@ class WhatsAppController extends Controller
                 }
                 break;
             case 'assigning':
-                $data = $this->sendMessageText($remittent,'En unos minutos te asignaremos una unidad.',$phone_number_id);
+                $trip=new TripController();
+                $location_client = [
+                    'lat'=>$conversation->latitude,
+                    'lng'=>$conversation->longitude
+                ];
+                if($conversation->type='taxi'){
+                    $assigned= $trip->assignTripToTaxi($location_client);
+                    if(!$assigned['status']){
+                        $data = $this->sendMessageText($remittent,$assigned['message'],$phone_number_id);
+                    }
+                }
                return $dat = $data->json();
                 break;
         }

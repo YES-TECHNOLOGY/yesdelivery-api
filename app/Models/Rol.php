@@ -9,8 +9,6 @@ class Rol extends Model
 {
     use HasFactory;
 
-    use HasFactory;
-
     protected $primaryKey="cod_rol";
 
     protected $fillable=[

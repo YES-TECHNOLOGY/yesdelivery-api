@@ -23,7 +23,8 @@ return new class extends Migration
             $table->string('type',50)->comment('vehicle type ej: Moto');
             $table->string('registration_photography')->nullable()->comment('vehicle registration photo');
             $table->string('active')->default(0)->comment('vehicle active');
-            $table->enum('status',['available','not_available','disconnected'])->default('not_available')->comment('vehicle status');
+            $table->enum('type_orders',['taxi','delivery','taxi_delivery'])->comment('type of orders that the vehicle can perform');
+            $table->enum('status',['connected','assigned','disconnected'])->default('disconnected')->comment('vehicle status');
 
             $table->unsignedBigInteger('cod_user')->nullable()->comment('user identifier');
             $table->foreign('cod_user')

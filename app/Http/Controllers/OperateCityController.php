@@ -35,12 +35,14 @@ class OperateCityController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
+
         Controller::verifyPermissions($request->user(),'POST','/cities');
         $data=[];
         $edit_permission=[
             'type',
+            'name',
             'minimum_price',
             'night_km_price',
             'day_km_price',
@@ -52,6 +54,7 @@ class OperateCityController extends Controller
             'active',
             'comment',
             'cod_dpa',
+            'polygon'
         ];
 
         foreach ($edit_permission as $permission) {
@@ -60,7 +63,8 @@ class OperateCityController extends Controller
         }
 
         $validate=\Validator::make($data,[
-            'type'=>'required|max:255|unique:operate_cities,type,'.$data['type'].',cod_dpa,cod_dpa,'.$data['cod_dpa'],
+            'name'=>'required|max:255|unique:operate_cities,name,'.$data['name'].',cod_dpa,cod_dpa,'.$data['cod_dpa'],
+            'type'=>'required|in:delivery,taxi',
             'minimum_price'=>'required|numeric',
             'night_km_price'=>'required|numeric',
             'day_km_price'=>'required|numeric',
@@ -71,6 +75,7 @@ class OperateCityController extends Controller
             'night_end_time'=>'required|date_format:H:i:s',
             'active'=>'boolean',
             'cod_dpa'=>'required|exists:dpas,cod_dpa',
+            'polygon'=>'required'
         ],$this->messages);
 
         if ($validate->fails())
@@ -113,7 +118,8 @@ class OperateCityController extends Controller
         $city=OperateCity::findOrFail($id);
 
         $validations=[
-            'type'=>'required|max:255|unique:operate_cities,type,'.$city->id.',id,cod_dpa,'.$city->cod_dpa,
+            'name'=>'required|max:255|unique:operate_cities,name,'.$city->id.',id,cod_dpa,'.$city->cod_dpa,
+            'type'=>'required|in:delivery,taxi',
             'minimum_price'=>'required|numeric',
             'night_km_price'=>'required|numeric',
             'day_km_price'=>'required|numeric',
@@ -123,6 +129,7 @@ class OperateCityController extends Controller
             'night_start_time'=>'required|date_format:H:i:s',
             'night_end_time'=>'required|date_format:H:i:s',
             'cod_dpa'=>'required|exists:dpas,cod_dpa',
+            'polygon'=>'required|json'
         ];
 
         $data=[];

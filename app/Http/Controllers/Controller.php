@@ -60,7 +60,7 @@ class Controller extends BaseController
      * @param $origin
      * @param User|null $user
      */
-    public function log($type,$logt,$origin,User $user=null){
+    public static function log($type,$logt,$origin,User $user=null){
         $log=[];
         if(isset($_SERVER['HTTP_USER_AGENT'])){
             $log['user_agent']=$_SERVER['HTTP_USER_AGENT'];

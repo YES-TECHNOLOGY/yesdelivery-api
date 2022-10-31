@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Casts\Json;
 
 class OperateCity extends Model
 {
@@ -16,6 +17,7 @@ class OperateCity extends Model
      */
     protected $fillable = [
         'type',
+        'name',
         'minimum_price',
         'night_km_price',
         'day_km_price',
@@ -27,6 +29,13 @@ class OperateCity extends Model
         'active',
         'comment',
         'cod_dpa',
+        'polygon'
+    ];
+
+    protected $casts = [
+        'polygon' => Json::class,
+        'night_start_time' => 'datetime',
+        'night_end_time' => 'datetime'
     ];
 
     /**
@@ -41,5 +50,9 @@ class OperateCity extends Model
 
     public function dpa(){
         return $this->belongsTo(Dpa::class,'cod_dpa','cod_dpa');
+    }
+
+    public function users(){
+        return $this->belongsToMany(User::class,'operate_city_user','cod_operate_city','cod_user');
     }
 }

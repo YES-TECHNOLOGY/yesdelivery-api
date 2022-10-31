@@ -39,7 +39,6 @@ class Vehicle extends Model
         'created_at',
         'updated_at',
         'cod_user',
-        'status'
     ];
 
     /**
@@ -61,5 +60,15 @@ class Vehicle extends Model
     public function locations(): HasMany
     {
         return $this->hasMany(Location::class,'cod_vehicle');
+    }
+
+    /**
+     * Return the trips of vehicle
+     *
+     * @return HasMany
+     */
+    public function trips(): HasMany
+    {
+        return $this->hasMany(Trip::class,'vehicle_id');
     }
 }

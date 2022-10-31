@@ -122,4 +122,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Conversation::class,'cod_user');
     }
+
+    /**
+     * Return the operate cities of user working
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function operateCities(){
+        return $this->belongsToMany(OperateCity::class,'operate_city_user','cod_user','cod_operate_city');
+    }
+
 }

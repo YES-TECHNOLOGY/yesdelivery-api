@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Conversation;
 use App\Models\File;
 use App\Models\Location;
 use App\Models\Vehicle;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -42,8 +44,8 @@ class VehicleController extends Controller
             'model',
             'year_manufacture',
             'color',
-            'registration_photography',
-            'type'
+            'type',
+            'type_orders'
         ];
 
         foreach ($edit_permission as $d){
@@ -58,7 +60,8 @@ class VehicleController extends Controller
             'model'=>'required|max:50',
             'year_manufacture'=>'required|numeric',
             'color'=>'required|max:50',
-            'type'=>'required'
+            'type'=>'required',
+            'type_orders'=>'required|in:taxi,delivery,taxi_delivery',
         ],$this->messages);
 
         if ($validate->fails())
@@ -87,6 +90,9 @@ class VehicleController extends Controller
     {
         Controller::verifyPermissions($request->user(),'GET','/vehicles');
         $vehicle=$request->user()->vehicles->find($id);
+        if(!$vehicle){
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
+        }
         $this->generateRegistrationPhotographyUrl($vehicle);
         return $this->response('false',Response::HTTP_OK,'200 OK',$vehicle);
     }
@@ -105,7 +111,7 @@ class VehicleController extends Controller
         $vehicle=$request->user()->vehicles->find($id);
 
         if(!$vehicle){
-            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
         }
 
         $data=[];
@@ -116,7 +122,8 @@ class VehicleController extends Controller
             'year_manufacture',
             'color',
             'active',
-            'type'
+            'type',
+            'type_orders'
         ];
 
         foreach ($edit_permission as $d){
@@ -131,7 +138,8 @@ class VehicleController extends Controller
             'model'=>'max:50|min:1',
             'year_manufacture'=>'numeric',
             'color'=>'max:50|min:1',
-            'type'=>'required'
+            'type'=>'required',
+            'type_orders'=>'required|in:taxi,delivery,taxi_delivery',
         ],$this->messages);
 
         if ($validate->fails())
@@ -165,7 +173,7 @@ class VehicleController extends Controller
             $vehicle->delete();
             return $this->response('false', Response::HTTP_OK, '200 OK');
         }
-        return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+        return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
     }
 
     /**
@@ -181,7 +189,7 @@ class VehicleController extends Controller
         $vehicle=$request->user()->vehicles->find($id);
 
         if(!$vehicle||$vehicle->registration_photography!=null){
-            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
         }
 
         if($request->hasFile('photography')){
@@ -227,7 +235,7 @@ class VehicleController extends Controller
         $vehicle=$request->user()->vehicles->find($id);
 
         if(!$vehicle){
-            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
         }
         $data=[
             'registration_photography'=>null
@@ -265,7 +273,7 @@ class VehicleController extends Controller
         $vehicle=$request->user()->vehicles->find($id);
 
         if(!$vehicle){
-            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
         }
 
         $data=[];
@@ -295,6 +303,155 @@ class VehicleController extends Controller
         Location::create($data);
 
         return $this->response(false, Response::HTTP_CREATED, '201 Created');
+
+    }
+
+    public function connect(Request $request,$id){
+        $vehicle=$request->user()->vehicles->find($id);
+        if(!$vehicle){
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
+        }
+
+        if($request->action=='disconnected'){
+            if($vehicle->status!='connected'){
+                return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+            }
+            $vehicle->status='disconnected';
+            $vehicle->save();
+            $log="The user '".$request->user()->id."' disconnected vehicle '$vehicle->id'";
+            $this->log('info',$log,'web',$request->user());
+            return $this->response('false', Response::HTTP_OK, '200 OK');
+        }
+
+        if($request->user()->vehicles->where('status','!=','disconnected')->first()){
+            $error=[
+                'message'=>'You have a vehicle connected',
+                'code'=>'VEHICLE_CONNECTED'
+            ];
+
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST',$error);
+        }
+        if(!$vehicle->active){
+            $error=[
+                'message'=>'The vehicle is not active',
+                'code'=>'VEHICLE_NOT_ACTIVE'
+            ];
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $error);
+        }
+
+        $last_location=$vehicle->locations->last();
+        if(!$last_location){
+            $error=[
+                'message'=>'The vehicle has not location',
+                'code'=>'VEHICLE_NOT_LOCATION'
+            ];
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $error);
+        }
+        $point=[
+            'lat'=>$last_location->latitude,
+            'lng'=>$last_location->longitude
+        ];
+        $operate_city=$request->user()->operateCities->where('active','=',true)->first();
+        $polygon=$operate_city->polygon->features[0]->geometry->coordinates[0];
+
+        if(!GeoLocationController::isWithinPolygon($point,$polygon)){
+            $error=[
+                'message'=>'The vehicle is not in your operate city',
+                'code'=>'VEHICLE_NOT_IN_OPERATE_CITY'
+            ];
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $error);
+        }
+
+        $data=[
+            'status'=>'connected'
+        ];
+        $vehicle->update($data);
+        $log="The user '".$request->user()->id."' connect the vehicle $vehicle->id.";
+        $this->log('info',$log,'web',$request->user());
+        return $this->response('false', Response::HTTP_OK, '200 OK');
+    }
+
+    /**
+     * Return the trip of vehicle
+     *
+     * @param Request $request
+     * @param $id
+     * @return JsonResponse
+     */
+    public function trip(Request $request, $id): JsonResponse
+    {
+        $vehicle=$request->user()->vehicles->find($id);
+        if(!$vehicle) {
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
+        }
+         $trip=$vehicle->findOrfail($id)
+            ->trips()
+            ->where('status','=','traveling')
+            ->orwhere('status','=','delivery')
+            ->first();
+        if(!$trip){
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
+        }
+
+        return $this->response('false', Response::HTTP_OK, '200 OK',$trip);
+    }
+
+
+    public function updateTrip(Request $request, $id){
+        $data=[];
+        $vehicle=$request->user()->vehicles->find($id);
+        if(!$vehicle) {
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
+        }
+        $trip=$vehicle->findOrfail($id)
+            ->trips()
+            ->where('status','=','traveling')
+            ->orwhere('status','=','delivery')
+            ->first();
+        if(!$trip){
+            return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
+        }
+        $validate=Validator::make($request->all(),[
+            'status'=>'required|in:traveling,delivery,canceled,completed',
+            'waiting_time'=>'numeric',
+            'distance'=>'numeric'
+        ],$this->messages);
+
+        if ($validate->fails())
+        {
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $validate->errors());
+        }
+
+        $location=$vehicle->locations->last();
+
+        if($request->status=='delivery' && $trip->status='traveling'){
+            $data['status']='delivery';
+            $data['latitude_origin']=$location->latitude;
+            $data['longitude_origin']=$location->longitude;
+            $data['start_time']=Carbon::now();
+        }
+
+        if($request->status=='completed'){
+            $data['status']='completed';
+            $data['latitude_destination']=$location->latitude;
+            $data['longitude_destination']=$location->longitude;
+           // $data['end_time']=Carbon::now();
+            $data['waiting_time']= $request->waiting_time ?? 0;
+            $data['distance']= $request->distance ?? 0;
+        }
+
+
+
+        if(!$data){
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+        }
+
+        $price_trip=TripController::totalPrice($trip);
+        $data['distance_price']=$price_trip['distance_price'];
+        $data['time_price']=$price_trip['time_price'];
+        $data['adicional_price']=$price_trip['adicional_price'];
+        $trip->update($data);
+        return $this->response('false', Response::HTTP_NO_CONTENT, '204 NO CONTENT');
 
     }
 }
