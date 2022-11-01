@@ -142,12 +142,11 @@ class WhatsAppController extends Controller
     }
 
     public function receiveMessages(Request $request){
-        $data=$request->all();
-        Storage::disk('local')->put(now().'.txt', json_encode($data));
+        $message_wp=$request->all();
 
-        $value= $data['entry'][0]['changes'][0]['value'] ?? '';
+        $value= $message_wp['entry'][0]['changes'][0]['value'] ?? '';
         if(!$value){
-            $this->log('critical',json_encode($data), 'facebook');
+            $this->log('critical',json_encode($message_wp), 'facebook');
             return null;
         }
 
@@ -182,7 +181,7 @@ class WhatsAppController extends Controller
 
                 $message->update($mess);
             }
-            $this->log('info',$data, 'facebook');
+            $this->log('info',json_encode($message_wp), 'facebook');
             return  $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
         }
 
@@ -212,7 +211,12 @@ class WhatsAppController extends Controller
 
         $conv=Conversation::create($dat_conv);
         if(!$conv){
-            $this->log('critical',$dat_conv, 'web');
+            $log=[
+                'status'=>'error',
+                'message'=>'Error to create conversation',
+                'data'=>$dat_conv
+            ];
+            $this->log('critical',$log, 'web');
             return  $this->response('true', \Illuminate\Http\Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
         }
 
@@ -237,7 +241,7 @@ class WhatsAppController extends Controller
             ];
 
             $conv->update($conver);
-            $this->log('info',$data,'facebook');
+            $this->log('info',json_encode($message_wp), 'facebook');
             return  $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
            }
 
@@ -260,7 +264,13 @@ class WhatsAppController extends Controller
 
            $conversation=Conversation::create($dat_conv);
            if(!$conversation){
-               $this->log('critical',$dat_conv, 'web');
+                $log=[
+                     'status'=>'error',
+                     'message'=>'Error to create conversation',
+                     'data'=>$dat_conv
+                ];
+               $this->log('critical',$log, 'web');
+               $this->log('info',json_encode($message_wp), 'facebook');
                return  $this->response('true', \Illuminate\Http\Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
            }
        }
@@ -282,7 +292,7 @@ class WhatsAppController extends Controller
                             'type'=>'text'
                         ];
                         Messages::create($message);
-                        $this->log('info', json_encode($data), 'facebook');
+                        $this->log('info',json_encode($message_wp), 'facebook');
                         return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                     }
                 }
@@ -315,7 +325,7 @@ class WhatsAppController extends Controller
                         'status'=>'order'
                     ];
                     $conversation->update($conver);
-                    $this->log('info',$data,'facebook');
+                    $this->log('info',json_encode($message_wp), 'facebook');
                     return  $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                 }
 
@@ -344,7 +354,7 @@ class WhatsAppController extends Controller
                                 'type_order'=>$sms
                             ];
                             $conversation->update($conver);
-                            $this->log('info',$data, 'facebook');
+                            $this->log('info',json_encode($message_wp), 'facebook');
                             return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                         }
                     }
@@ -361,7 +371,7 @@ class WhatsAppController extends Controller
                         'type'=>'template'
                     ];
                     Messages::create($message);
-                    $this->log('info', json_encode($data), 'facebook');
+                    $this->log('info',json_encode($message_wp), 'facebook');
                     return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                 }
                 break;
@@ -384,7 +394,7 @@ class WhatsAppController extends Controller
                             'longitude'=>$value['messages'][0]['location']['longitude']
                         ];
                         $conversation->update($conver);
-                        $this->log('info',$data, 'facebook');
+                        $this->log('info',json_encode($message_wp), 'facebook');
                         return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                     }
                 }
@@ -399,7 +409,7 @@ class WhatsAppController extends Controller
                         'type'=>'template'
                     ];
                     Messages::create($message);
-                    $this->log('info', $data, 'facebook');
+                    $this->log('info',json_encode($message_wp), 'facebook');
                     return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                 }
 
@@ -433,7 +443,7 @@ class WhatsAppController extends Controller
                                 'operate_city_id'=>($city)?$city->id:null
                             ];
                             $conversation->update($conver);
-                            $this->log('info',$data, 'facebook');
+                            $this->log('info',json_encode($message_wp), 'facebook');
                             return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                         }
                     }
@@ -449,7 +459,7 @@ class WhatsAppController extends Controller
                         'type'=>'template'
                     ];
                     Messages::create($message);
-                    $this->log('info', json_encode($data), 'facebook');
+                    $this->log('info',json_encode($message_wp), 'facebook');
                     return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                 }
                 break;
@@ -465,10 +475,11 @@ class WhatsAppController extends Controller
                         $data = $this->sendMessageText($remittent,$assigned['message'],$phone_number_id);
                     }
                 }
+                $this->log('info',json_encode($message_wp), 'facebook');
                return $dat = $data->json();
                 break;
         }
-        $this->log('alert',json_encode($data),'facebook');
+        $this->log('info',json_encode($message_wp), 'facebook');
         return $this->response('false', \Illuminate\Http\Response::HTTP_BAD_REQUEST, '400 Bad Request');
     }
 
