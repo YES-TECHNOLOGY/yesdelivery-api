@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->text('whatsapp_id')->comment('identifier whatsapp message');
+            $table->text('whatsapp_id')->nullable()->comment('identifier whatsapp message');
             $table->text('message');
             $table->string('type','100');
             $table->string('mime_type','100')->nullable();

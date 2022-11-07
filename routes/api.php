@@ -49,11 +49,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/roles/{role}/access', [RolController::class, 'setAccess']);
         Route::delete('/roles/{role}/access', [RolController::class, 'removeAccess']);
         Route::get('/access', [AccessController::class, 'index']);
-        Route::resource('/messages',MessagesController::class);
         Route::resource('/cities',OperateCityController::class);
         Route::post('/users/{user}/operate',[UserController::class,'operateCityStore']);
         Route::put('/users/{user}/operate',[UserController::class,'operateCityUpdate']);
         Route::post('/conversations/{conversation}',[ConversationController::class,'acceptConversation']);
+        Route::get('/conversations/{conversation}/messages',[MessagesController::class,'index']);
+        Route::post('/conversations/{conversation}/messages',[MessagesController::class,'store']);
         Route::get('/vehicles/{vehicle}/trip',[VehicleController::class,'trip']);
         Route::put('/vehicles/{vehicle}/trip',[VehicleController::class,'updateTrip']);
 
@@ -66,7 +67,7 @@ Route::prefix('v1')->group(function () {
         });
 
     });
-
+    Route::get('/file/{file}',[FileController::class,'viewFile']);
     Route::post('/whatsapp', [WhatsAppController::class, 'receiveMessages']);
     Route::get('/whatsapp', [WhatsAppController::class, 'verificationWhatsapp']);
     Route::get('/demo', [ConversationController::class, 'assignConversation']);

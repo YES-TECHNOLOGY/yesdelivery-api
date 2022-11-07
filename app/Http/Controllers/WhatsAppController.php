@@ -8,6 +8,7 @@ use App\Models\Messages;
 use App\Models\WhatsappNumber;
 use Carbon\Carbon;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\Utils;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -16,6 +17,61 @@ use Illuminate\Support\Facades\Storage;
 
 class WhatsAppController extends Controller
 {
+
+    /**
+     * Upload file to whatsapp
+     * @param $path_file
+     * @param $phone_number_id
+     * @return PromiseInterface|Response
+     */
+    public static function uploadMedia($path_file,$phone_number_id)
+    {
+
+        $token=env('WHATSAPP_TOKEN');
+
+        $wp_version=env('WHATSAPP_VERSION');
+        $media = '../storage/app/' . $path_file;
+        $contents = fopen($media, 'r');
+        $data=[
+            "messaging_product" => "whatsapp",
+        ];
+
+        $headers=[
+            'Authorization' => 'Bearer '.$token
+        ];
+
+        return Http::withHeaders($headers)
+            ->attach('file',$contents)
+            ->post("https://graph.facebook.com/$wp_version/$phone_number_id/media",$data);
+    }
+
+    /**
+     * Send message to whatsapp
+     *
+     * @param $remittent
+     * @param $object_id
+     * @param $phone_number_id
+     * @param $type
+     * @return PromiseInterface|Response
+     */
+    public static function sendMessageMediaObject($remittent,$object_id,$phone_number_id,$type): PromiseInterface|Response
+    {
+        $token=env('WHATSAPP_TOKEN');
+        $wp_version=env('WHATSAPP_VERSION');
+        $data=[
+            "messaging_product" => "whatsapp",
+            "recipient_type" => "individual",
+            "to"=> $remittent,
+            "type"=> $type,
+            "$type"=> [
+                "id"=> "$object_id"
+            ]
+        ];
+        return Http::withHeaders([
+            'Content-Type'=>'application/json',
+            'Authorization'=>"Bearer $token"
+        ])->post("https://graph.facebook.com/$wp_version/$phone_number_id/messages",$data);
+    }
 
     /**
      * Send Messages type txt with Whatsapp
@@ -85,11 +141,28 @@ class WhatsAppController extends Controller
      * @param $phone_number_id
      * @return PromiseInterface|Response
      */
-    public static function sendMessageParamsTemplate($remittent, $template, $parameters, $phone_number_id): PromiseInterface|Response
+    public static function sendMessageParamsTemplate($remittent, $template, $parameters, $phone_number_id,$image_header_url=false): PromiseInterface|Response
     {
         $token=env('WHATSAPP_TOKEN');
         $wp_version=env('WHATSAPP_VERSION');
 
+        if($image_header_url){
+            $components[]=array(
+                "type"=> "header",
+                "parameters"=> array(
+                    array(
+                        "type"=> "image",
+                        "image"=> [
+                            "link"=> $image_header_url
+                        ]
+                    )
+                )
+            );
+        }
+        $components[]=array(
+            "type"=> "body",
+            "parameters"=> $parameters
+        );
         $data= [
             "messaging_product"=> "whatsapp",
             "recipient_type"=> "individual",
@@ -100,18 +173,24 @@ class WhatsAppController extends Controller
                 "language"=> [
                     "code"=> "es_MX"
                 ],
-                "components"=> array(
-                    array(
-                         "type"=> "body",
-                         "parameters"=> $parameters
-                    )
-                )
+                "components"=> $components
             ]
         ];
         return Http::withHeaders([
             'Content-Type'=>'application/json',
             'Authorization'=>"Bearer $token"
         ])->post("https://graph.facebook.com/$wp_version/$phone_number_id/messages",$data);
+    }
+
+    private static function retriveMediaUrl($media_id){
+        $token=env('WHATSAPP_TOKEN');
+        $wp_version=env('WHATSAPP_VERSION');
+
+        return Http::withHeaders([
+            'Content-Type'=>'application/json',
+            'Authorization'=>"Bearer $token"
+        ])->get("https://graph.facebook.com/$wp_version/$media_id");
+
     }
 
     private function managementMessages($message=0,Conversation $conversation){
@@ -137,6 +216,29 @@ class WhatsAppController extends Controller
                     ];
                     Messages::create($message);
                     break;
+                case 'audio':
+                    $token=env('WHATSAPP_TOKEN');
+                    $audio= $message['audio'];
+                    $url=WhatsAppController::retriveMediaUrl($audio['id']);
+                    if($url->ok()){
+                        $user= $conversation->user;
+                        $path="conversations/demo/$conversation->id";
+                        $content= Http::withHeaders([
+                            'Content-Type'=>'application/json',
+                            'Authorization'=>"Bearer $token"
+                        ])->get($url['url'])->body();
+
+                        $file= FileController::saveFileByContent($content,$user,'audio',$url['mime_type']);
+                        $message=[
+                            'message'=>$file->name,
+                            'type'=>'audio',
+                            'whatsapp_id'=>$message['id'],
+                            'send_user'=>1,
+                            'conversation_id'=>$conversation->id
+                        ];
+                        Messages::create($message);
+                    }
+                    break;
             }
         }
     }
@@ -150,7 +252,8 @@ class WhatsAppController extends Controller
             return null;
         }
 
-        if($value['contacts'][0]['wa_id']!='593980150689')
+
+        if(env('APP_TEST')&&$value['contacts'][0]['wa_id']!='593980150689')
             return '';
 
         if(isset($value['statuses'])&&$statuses=$value['statuses'][0]){
@@ -247,7 +350,8 @@ class WhatsAppController extends Controller
 
        }
 
-       $conversation=$wp_number->conversations->where('display_phone_number','=',$display_phone_number)
+           $conversation=$wp_number->conversations
+           ->where('display_phone_number','=',$display_phone_number)
            ->where('status','!=','terminated')
            ->where('deleted','!=',true)
            ->first();
@@ -275,7 +379,7 @@ class WhatsAppController extends Controller
            }
        }
 
-        $this->managementMessages($value['messages'][0],$conversation);
+       $this->managementMessages($value['messages'][0],$conversation);
 
         switch ($conversation['status']){
             case 'name':
@@ -463,20 +567,8 @@ class WhatsAppController extends Controller
                     return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                 }
                 break;
-            case 'assigning':
-                $trip=new TripController();
-                $location_client = [
-                    'lat'=>$conversation->latitude,
-                    'lng'=>$conversation->longitude
-                ];
-                if($conversation->type='taxi'){
-                    $assigned= $trip->assignTripToTaxi($location_client);
-                    if(!$assigned['status']){
-                        $data = $this->sendMessageText($remittent,$assigned['message'],$phone_number_id);
-                    }
-                }
-                $this->log('info',json_encode($message_wp), 'facebook');
-               return $dat = $data->json();
+            case 'assigned':
+                return $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
                 break;
         }
         $this->log('info',json_encode($message_wp), 'facebook');

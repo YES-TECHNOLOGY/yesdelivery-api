@@ -23,94 +23,130 @@ class ConversationController extends Controller
         $possible_users = [];
         $assigned_user=null;
         $conversation = Conversation::where('status', '=', 'assigning')->first();
-        if ($conversation) {
-            $location_client = [$conversation->latitude, $conversation->longitude];
-            $operate_users = OperateCity::find($conversation->operate_city_id)->users;
-            foreach ($operate_users as $user) {
-                if($user->id==$conversation->cod_user){
-                    break;
-                }
-                if ($conversation->type_order == 'taxi') {
-                    $vehicle = $user->vehicles
-                        ->where('status', '=', 'connected')
-                        ->where('type_orders', '!=', 'delivery')
-                        ->first();
-                    if(!$vehicle){
-                        break;
-                    }
-                    $last_location = $vehicle->locations->last();
-                    $location = [
-                        $last_location->latitude,
-                        $last_location->longitude
-                    ];
-                    $is_near = GeoLocationController::isWithin($location_client, $location);
-                    if ($is_near) {
-                        $user['vehicle'] = $vehicle;
-                        $possible_users[] = $user;
-                    }
-                    unset($user->vehicles);
-                }
-            }
-            if(!$possible_users){
-                $conversation->status = 'terminated';
-                $conversation->save();
-                $sms='Lo sentimos, no hay conductores disponibles en este momento';
-                WhatsAppController::sendMessageText($conversation->phoneNumber->number,$sms,$conversation->phone_number_id);
-                return false;
-            }
-            foreach ($possible_users as $key => $user) {
-                $location_vehicle=$user->vehicle->locations->last();
 
-                $dat=[
-                    $location_vehicle->latitude,
-                    $location_vehicle->longitude
-                ];
-
-                $distance= GoogleGeoLocationController::distanceMatrix($dat,$location_client);
-                if($distance['status']=='OK'){
-                    $user['distance']=$distance;
-                }
-                unset($user->vehicle->locations);
-
-                if($assigned_user==null){
-                    $assigned_user=$user;
-                }else{
-                    if($user['distance']['rows'][0]['elements'][0]['distance']['value']<$assigned_user['distance']['rows'][0]['elements'][0]['distance']['value']){
-                        $assigned_user=$user;
-                    }
-                }
-            }
-
-            //enviar notificacion al usuario asignado
-
-            $dat_conv=[
-                'recipient_phone_number'=>$conversation->recipient_phone_number,
-                'display_phone_number'=>$conversation->display_phone_number,
-                'phone_number_id'=>$conversation->phone_number_id,
-                'status'=>'assigned',
-                'status_user'=>'pending',
-                'cod_user'=>$assigned_user->id,
-                'latitude'=>$conversation->latitude,
-                'longitude'=>$conversation->longitude,
-                'type_order'=>$conversation->type_order,
-                'reference'=>$conversation->reference,
-                'operate_city_id'=>$conversation->operate_city_id,
-            ];
-
-            $conv=Conversation::create($dat_conv);
-            if(!$conv){
-                Controller::log('critical',$dat_conv, 'cli');
-                return false;
-            }
-
-            $conversation->status = 'assigned';
-            $conversation->save();
-
-            $assigned_user->vehicle->status='assigned';
-            $assigned_user->vehicle->save();
-
-            return true;
+        if(!$conversation){
+            return false;
         }
+        $operate_users = OperateCity::find($conversation->operate_city_id)->users;
+       switch ($conversation->type_order){
+           case 'taxi':
+               $location_client = [$conversation->latitude, $conversation->longitude];
+               foreach ($operate_users as $user) {
+                   if($user->id==$conversation->cod_user){
+                       break;
+                   }
+
+                       $vehicle = $user->vehicles
+                           ->where('status', '=', 'connected')
+                           ->where('type_orders', '==', 'taxi')
+                           ->first();
+                       if(!$vehicle){
+                           break;
+                       }
+                       $last_location = $vehicle->locations->last();
+                       $location = [
+                           $last_location->latitude,
+                           $last_location->longitude
+                       ];
+                       $is_near = GeoLocationController::isWithin($location_client, $location);
+                       if ($is_near) {
+                           $user['vehicle'] = $vehicle;
+                           $possible_users[] = $user;
+                       }
+                       unset($user->vehicles);
+
+               }
+               foreach ($possible_users as $key => $user) {
+                   $location_vehicle=$user->vehicle->locations->last();
+
+                   $dat=[
+                       $location_vehicle->latitude,
+                       $location_vehicle->longitude
+                   ];
+
+                   $distance= GoogleGeoLocationController::distanceMatrix($dat,$location_client);
+                   if($distance['status']=='OK'){
+                       $user['distance']=$distance;
+
+                       unset($user->vehicle->locations);
+
+                       if($assigned_user==null){
+                           $assigned_user=$user;
+                       }else{
+                           if($user['distance']['rows'][0]['elements'][0]['distance']['value']<$assigned_user['distance']['rows'][0]['elements'][0]['distance']['value']){
+                               $assigned_user=$user;
+                           }
+                       }
+                   }
+               }
+               break;
+           case 'delivery':
+               foreach ($operate_users as $user) {
+                   if($user->id==$conversation->cod_user){
+                       //break;
+                   }
+                   $vehicle = $user->vehicles
+                       ->where('status', '=', 'connected')
+                       ->where('type_orders', '==', 'delivery')
+                       ->first();
+                   if(!$vehicle){
+                       break;
+                   }
+
+                   $user['vehicle'] = $vehicle;
+                   $possible_users[] = $user;
+                   unset($user->vehicles);
+               }
+               $arrAux = array();
+
+               foreach ($possible_users as $key=> $row)
+               {
+                   $arrAux[$key] = is_object($row) ? $arrAux[$key] = $row->vehicle->updated_at : $row['vehicle']['updated_at'];
+                   $arrAux[$key] = strtolower($arrAux[$key]);
+               }
+               array_multisort($arrAux, SORT_ASC, $possible_users);
+               if(isset($possible_users[0]))
+                   $assigned_user = $possible_users[0];
+                break;
+       }
+
+        if(!$assigned_user){
+            $conversation->status = 'terminated';
+            $conversation->save();
+            $sms='Lo sentimos, no hay conductores disponibles en este momento';
+            WhatsAppController::sendMessageText($conversation->phoneNumber->number,$sms,$conversation->phone_number_id);
+            return false;
+        }
+
+        //enviar notificacion al usuario asignado
+
+        $dat_conv=[
+            'recipient_phone_number'=>$conversation->recipient_phone_number,
+            'display_phone_number'=>$conversation->display_phone_number,
+            'phone_number_id'=>$conversation->phone_number_id,
+            'status'=>'assigned',
+            'status_user'=>'pending',
+            'cod_user'=>$assigned_user->id,
+            'latitude'=>$conversation->latitude,
+            'longitude'=>$conversation->longitude,
+            'type_order'=>$conversation->type_order,
+            'reference'=>$conversation->reference,
+            'operate_city_id'=>$conversation->operate_city_id,
+        ];
+
+        $conv=Conversation::create($dat_conv);
+        if(!$conv){
+            Controller::log('critical',$dat_conv, 'cli');
+            return false;
+        }
+
+        $conversation->status = 'terminated';
+        $conversation->save();
+
+        $assigned_user->vehicle->status='assigned';
+        $assigned_user->vehicle->save();
+
+        return true;
     }
 
     /**
@@ -136,7 +172,7 @@ class ConversationController extends Controller
         }
 
         $time_difference= Carbon::parse(now())->diffInSeconds($conversation->created_at);
-        if($time_difference>40000){
+        if($time_difference>400000){
             $error=[
                 "message"=>"The conversation has expired",
                 "code"=>"CONVERSATION_EXPIRED"
@@ -147,6 +183,39 @@ class ConversationController extends Controller
         $name=$conversation->user->name;
         $lastname=$conversation->user->lastname;
         $vehicle=$conversation->user->vehicles->where('status','=','assigned')->first();
+
+        $trip=[
+            'vehicle_id'=>$vehicle->id,
+            'conversation_id'=>$conversation->id,
+            'status'=>'traveling',
+        ];
+
+        $validate=Validator::make($trip,[
+            'vehicle_id'=>'required|exists:vehicles,id',
+            'conversation_id'=>'required|exists:conversations,id',
+            'status'=>'required|in:traveling,finished,canceled,delivery'
+        ],$this->messages);
+
+        if ($validate->fails())
+        {
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $validate->errors());
+        }
+
+        $conversation->status_user = 'accept';
+        if(!$conversation->save()){
+            $error=[
+                "message"=>"The internal error has occurred",
+                "code"=>"INTERNAL_ERROR"
+            ];
+            return $this->response('true',404,$error);
+        }
+
+        $data= Trip::create($trip);
+
+        if($conversation->type_order=='delivery'){
+            return $this->response('false',Response::HTTP_OK,$data);
+        }
+
         $origin=[
             $vehicle->locations->last()->latitude,
             $vehicle->locations->last()->longitude
@@ -156,14 +225,7 @@ class ConversationController extends Controller
             $conversation->longitude
         ];
         $time= GoogleGeoLocationController::distanceMatrix($origin,$destination)['rows'][0]['elements'][0]['duration']['text'];
-        $conversation->status_user = 'accept';
-        if(!$conversation->save()){
-            $error=[
-                "message"=>"The internal error has occurred",
-                "code"=>"INTERNAL_ERROR"
-            ];
-            return $this->response('true',404,$error);
-        }
+
         $parameters=array(
             array(
                 "type"=> "text",
@@ -194,25 +256,6 @@ class ConversationController extends Controller
                 "text"=> "$time"
             )
         );
-
-        $trip=[
-            'vehicle_id'=>$vehicle->id,
-            'conversation_id'=>$conversation->id,
-            'status'=>'traveling',
-        ];
-
-        $validate=Validator::make($trip,[
-            'vehicle_id'=>'required|exists:vehicles,id',
-            'conversation_id'=>'required|exists:conversations,id',
-            'status'=>'required|in:traveling,finished,canceled,delivery'
-        ],$this->messages);
-
-        if ($validate->fails())
-        {
-            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $validate->errors());
-        }
-
-       $data= Trip::create($trip);
 
        WhatsAppController::sendMessageParamsTemplate($conversation->phoneNumber->number,'wp_assigned_taxi_pro',$parameters,$conversation->phone_number_id);
 

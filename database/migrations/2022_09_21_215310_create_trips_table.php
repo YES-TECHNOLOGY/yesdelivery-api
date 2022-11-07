@@ -15,6 +15,8 @@ return new class extends Migration
     {
         Schema::create('trips', function (Blueprint $table) {
             $table->id();
+            $table->text('order')->nullable()->comment('Order of the trip');
+            $table->float('price_order')->nullable()->comment('Price order of the trip');
             $table->enum('status', ['traveling','delivery', 'cancelled', 'completed']);
             $table->string('latitude_origin',50)->nullable()->comment('Latitude of origin trip');
             $table->string('longitude_origin',50)->nullable()->comment('Longitude of origin trip');
@@ -22,6 +24,7 @@ return new class extends Migration
             $table->string('longitude_destination',50)->nullable()->comment('Longitude of destination trip');
             $table->float('distance')->nullable()->comment('Distance of trip');
             $table->float('estimated_distance')->nullable()->comment('Estimated distance of trip');
+            $table->float('duration')->nullable()->comment('Duration of trip');
             $table->float('estimated_duration')->nullable()->comment('Estimated duration of trip');
             $table->dateTime('start_time')->nullable()->comment('Start time of trip');
             $table->dateTime('end_time')->nullable()->comment('End time of trip');

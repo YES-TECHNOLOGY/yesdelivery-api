@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use App\Models\File;
 use App\Models\Location;
+use App\Models\Trip;
 use App\Models\Vehicle;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -352,6 +353,15 @@ class VehicleController extends Controller
             'lng'=>$last_location->longitude
         ];
         $operate_city=$request->user()->operateCities->where('active','=',true)->first();
+
+        if(!$operate_city){
+            $error=[
+                'message'=>'Not operate city',
+                'code'=>'NOT_OPERATE_CITY'
+            ];
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $error);
+        }
+
         $polygon=$operate_city->polygon->features[0]->geometry->coordinates[0];
 
         if(!GeoLocationController::isWithinPolygon($point,$polygon)){
@@ -411,6 +421,122 @@ class VehicleController extends Controller
         if(!$trip){
             return $this->response('true', Response::HTTP_NOT_FOUND, '404 NOT FOUND');
         }
+
+        if($trip->conversation->type_order=='delivery'){
+            $validate=Validator::make($request->all(),[
+                'status'=>'required|in:traveling,delivery,canceled,completed',
+            ],$this->messages);
+
+            if ($validate->fails())
+            {
+                return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $validate->errors());
+            }
+
+            $location=$vehicle->locations->last();
+            $remittent= $trip->conversation->phoneNumber->number;
+
+            if($request->status=='delivery' && $trip->status=='traveling'){
+
+                $validate=Validator::make($request->all(),[
+                    'order'=>'required',
+                    'price_order'=>'required|numeric',
+                ],$this->messages);
+
+                if ($validate->fails())
+                {
+                    return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $validate->errors());
+                }
+
+                $data['status']='delivery';
+                $data['latitude_origin']=$location->latitude;
+                $data['longitude_origin']=$location->longitude;
+                $data['longitude_destination']=$trip->conversation->longitude;
+                $data['latitude_destination']=$trip->conversation->latitude;
+                $data['start_time']=Carbon::now();
+                $data['order']=$request->order;
+                $data['price_order']=$request->price_order;
+                $origin=[
+                    $location->latitude,
+                    $location->longitude,
+                ];
+               $destination=[
+                     $trip->conversation->latitude,
+                    $trip->conversation->longitude,
+                ];
+                $distance_matrix= GoogleGeoLocationController::distanceMatrix($origin,$destination);
+                $data['estimated_distance']=$distance_matrix['rows'][0]['elements'][0]['distance']['value'];
+                $data['estimated_duration']=$distance_matrix['rows'][0]['elements'][0]['duration']['value'];
+
+                $price_trip= TripController::totalPriceOrder($trip,$data['estimated_duration'],$data['estimated_distance'],$data['price_order']);
+                $data['distance_price']=$price_trip['distance_price'];
+                $data['time_price']=$price_trip['time_price'];
+                $data['adicional_price']=$price_trip['adicional_price'];
+
+                $parameters=array(
+                    array(
+                        "type"=> "text",
+                        "text"=> $data['price_order']
+                    ),
+                    array(
+                        "type"=> "text",
+                        "text"=> $data['distance_price']
+                    ),
+                    array(
+                        "type"=> "text",
+                        "text"=> $data['time_price']
+                    ),
+                    array(
+                        "type"=> "text",
+                        "text"=> $data['adicional_price']
+                    ),
+                    array(
+                        "type"=> "text",
+                        "text"=> $price_trip['total']
+                    )
+                );
+
+                $image='https://www.devsoftec.com/photo_2022-11-01_10-36-40.jpg';
+                WhatsAppController::sendMessageParamsTemplate($remittent,'wa_send_price_delivery',$parameters,$trip->conversation->phone_number_id,$image);
+            }
+
+            if($trip->status='traveling' && $request->status=='completed'){
+
+                $validate=Validator::make($request->all(),[
+                    'distance'=>'required|numeric',
+                    'duration'=>'required|numeric',
+                ],$this->messages);
+
+                if ($validate->fails())
+                {
+                    return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST', $validate->errors());
+                }
+
+                $data['end_time']=Carbon::now();
+                $data['duration']=$request->duration;
+                $data['distance']= $request->distance ?? 0;
+                $data['status']='completed';
+                $sms='Estimado cliente, su pedido ha sido entregado con éxito. Gracias por confiar en nosotros.';
+                WhatsAppController::sendMessageText($remittent,$sms,$trip->conversation->phone_number_id);
+            }
+
+            if(!$data){
+                return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
+            }
+
+            if(!$trip->update($data)){
+                $log=[
+                    'message'=>'Error updating trip',
+                    'code'=>'ERROR_UPDATING_TRIP'
+                ];
+                return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST',$log);
+            }
+            $trip->vehicle->update(['status'=>'disconnected']);
+            $trip->conversation->update(['status'=>'terminated']);
+
+            return $this->response('false', Response::HTTP_OK, '200 OK');
+        }
+
+
         $validate=Validator::make($request->all(),[
             'status'=>'required|in:traveling,delivery,canceled,completed',
             'waiting_time'=>'numeric',
@@ -435,12 +561,10 @@ class VehicleController extends Controller
             $data['status']='completed';
             $data['latitude_destination']=$location->latitude;
             $data['longitude_destination']=$location->longitude;
-           // $data['end_time']=Carbon::now();
+            $data['end_time']=Carbon::now();
             $data['waiting_time']= $request->waiting_time ?? 0;
             $data['distance']= $request->distance ?? 0;
         }
-
-
 
         if(!$data){
             return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
@@ -450,8 +574,38 @@ class VehicleController extends Controller
         $data['distance_price']=$price_trip['distance_price'];
         $data['time_price']=$price_trip['time_price'];
         $data['adicional_price']=$price_trip['adicional_price'];
-        $trip->update($data);
-        return $this->response('false', Response::HTTP_NO_CONTENT, '204 NO CONTENT');
 
+        if(!$trip->update($data)){
+            $log=[
+                'message'=>'Error updating trip',
+                'code'=>'ERROR_UPDATING_TRIP'
+            ];
+            return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST',$log);
+        }
+
+        $parameters=array(
+            array(
+                "type"=> "text",
+                "text"=> $data['distance_price']
+            ),
+            array(
+                "type"=> "text",
+                "text"=> $data['time_price']
+            ),
+            array(
+                "type"=> "text",
+                "text"=> $data['adicional_price']
+            ),
+            array(
+                "type"=> "text",
+                "text"=> $price_trip['total']
+            )
+        );
+        $remittent= $trip->conversation->phoneNumber->number;
+        $image='https://www.devsoftec.com/photo_2022-11-01_10-36-40.jpg';
+        WhatsAppController::sendMessageParamsTemplate($remittent,'wa_send_price_taxi',$parameters,$trip->conversation->phone_number_id,$image);
+        $trip->vehicle->update(['status'=>'disconnected']);
+        $trip->conversation->update(['status'=>'terminated']);
+        return $this->response('false', Response::HTTP_OK, '200 OK');
     }
 }

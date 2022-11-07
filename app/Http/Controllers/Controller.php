@@ -24,7 +24,9 @@ class Controller extends BaseController
         'mimes'=>'Formato no admitido',
         'regex'=>'El formato es incorrecto',
         'numeric'=>'El campo tiene que ser numérico',
-        'string'=>'Solo se aceptan texto'
+        'string'=>'Solo se aceptan texto',
+        'size'=>'El tamaño del archivo es muy grande',
+        'max'=>'El tamaño del archivo es muy grande',
     ];
 
     /**

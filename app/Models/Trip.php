@@ -16,12 +16,15 @@ class Trip extends Model{
      */
     protected $fillable=[
         'id',
+        'order',
+        'price_order',
         'latitude_origin',
         'longitude_origin',
         'latitude_destination',
         'longitude_destination',
         'distance',
         'estimated_distance',
+        'duration',
         'estimated_duration',
         'start_time',
         'end_time',
@@ -33,6 +36,8 @@ class Trip extends Model{
         'adicional_price',
         'vehicle_id',
         'conversation_id',
+        'status',
+
     ];
 
     /**
@@ -53,6 +58,16 @@ class Trip extends Model{
     public function conversation(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Conversation::class,'conversation_id');
+    }
+
+    /**
+     * Return the vehicle of trip
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function vehicle(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class,'vehicle_id');
     }
 
 }
