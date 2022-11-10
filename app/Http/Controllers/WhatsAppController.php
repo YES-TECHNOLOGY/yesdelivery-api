@@ -359,7 +359,7 @@ class WhatsAppController extends Controller
        }
 
            $conversation=$wp_number->conversations
-           ->where('display_phone_number','=',$display_phone_number)
+           ->where('phone_number_id','=',$phone_number_id)
            ->where('status','!=','terminated')
            ->where('deleted','!=',true)
            ->first();
