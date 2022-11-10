@@ -253,9 +253,6 @@ class WhatsAppController extends Controller
         }
 
 
-        if(env('APP_TEST')&&$value['contacts'][0]['wa_id']!='593980150689')
-            return '';
-
         if(isset($value['statuses'])&&$statuses=$value['statuses'][0]){
             $id=$statuses['id'];
             $message=Messages::where('whatsapp_id','=',$id)->first();
@@ -287,6 +284,9 @@ class WhatsAppController extends Controller
             $this->log('info',json_encode($message_wp), 'facebook');
             return  $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
         }
+
+        if(env('APP_TEST')&&$value['contacts'][0]['wa_id']!='593980150689')
+            return '';
 
         $metadata=$value['metadata'];
         $contacts= $value['contacts'][0];
@@ -334,7 +334,7 @@ class WhatsAppController extends Controller
                 'whatsapp_id'=>$d['messages'][0]['id'],
                 'message'=>$message,
                 'conversation_id'=>$conv->id,
-                'type'=>'template',
+                'type'=>'text',
                 'send_user'=>1,
             ];
             Messages::create($message);
