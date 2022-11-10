@@ -327,7 +327,7 @@ class WhatsAppController extends Controller
                 'message'=>'Error to create conversation',
                 'data'=>$dat_conv
             ];
-            $this->log('critical',$log, 'web');
+            $this->log('critical',json_encode($log), 'web');
             return  $this->response('true', \Illuminate\Http\Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
         }
 
