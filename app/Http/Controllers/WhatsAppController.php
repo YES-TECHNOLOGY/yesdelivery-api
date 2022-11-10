@@ -288,6 +288,14 @@ class WhatsAppController extends Controller
         if(env('APP_TEST')&&$value['contacts'][0]['wa_id']!='593980150689')
             return '';
 
+        $wa_id=$value['messages'][0]['id'];
+
+        $message=Messages::where('whatsapp_id','=',$wa_id)->first();
+        if($message){
+            $this->log('info',json_encode($message_wp), 'facebook duplicate');
+            return  $this->response('false', \Illuminate\Http\Response::HTTP_OK, '200 OK');
+        }
+
         $metadata=$value['metadata'];
         $contacts= $value['contacts'][0];
         $phone_number_id=$metadata['phone_number_id'];
