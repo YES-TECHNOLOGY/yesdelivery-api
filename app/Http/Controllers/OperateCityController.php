@@ -192,9 +192,10 @@ class OperateCityController extends Controller
 
 
     public function getOperateCityUser(Request $request){
-        return $request->user()
+        $cities= $request->user()
             ->operateCities()
             ->where('operate_city_user.active','=',true)->get();
+        return $this->response('false',Response::HTTP_OK,'200 OK',$cities,false);
 
     }
 }
