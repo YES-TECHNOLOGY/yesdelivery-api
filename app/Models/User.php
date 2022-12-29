@@ -124,7 +124,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Return the operate cities of user working
+     * Return to operate cities of user working
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function operateCities(){

@@ -189,4 +189,12 @@ class OperateCityController extends Controller
         }
         return $this->response('true', Response::HTTP_BAD_REQUEST, '400 BAD REQUEST');
     }
+
+
+    public function getOperateCityUser(Request $request){
+        return $request->user()
+            ->operateCities()
+            ->where('operate_city_user.active','=',true)->get();
+
+    }
 }

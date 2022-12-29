@@ -38,6 +38,7 @@ Route::prefix('v1')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
         });
     });
+
     Route::group(['middleware' => 'auth:api'], function () {
         Route::resource('users',UserController::class);
         Route::resource('roles',RolController::class);
@@ -63,7 +64,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/', [ProfileController::class, 'update']);
             Route::post('photography', [ProfileController::class, 'updatePhotography']);
             Route::post('identification', [ProfileController::class, 'updateIdentificationPhotography']);
-
+            Route::get('city',[OperateCityController::class,'getOperateCityUser']);
         });
 
     });
